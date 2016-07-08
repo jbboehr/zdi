@@ -7,7 +7,7 @@ use Exception;
 use ReflectionClass;
 use ReflectionMethod;
 
-use zdi\Container;
+use zdi\Container\Builder as ContainerBuilder;
 
 use zdi\Param\ParamInterface;
 use zdi\Param\ClassParam;
@@ -17,7 +17,7 @@ use zdi\Param\ValueParam;
 class Builder
 {
     /**
-     * @var Container
+     * @var ContainerBuilder|null
      */
     private $container;
 
@@ -58,10 +58,10 @@ class Builder
 
     /**
      * Builder constructor.
-     * @param Container $container
+     * @param ContainerBuilder|null $container
      * @param string|null $class
      */
-    public function __construct(Container $container, $class = null)
+    public function __construct(ContainerBuilder $container = null, $class = null)
     {
         $this->container = $container;
         $this->class = $class;
@@ -158,9 +158,11 @@ class Builder
         }
 
         // Add to container
-        $this->container->add($dependency);
-        if( $this->alias ) {
-            $this->container->alias($this->alias, $this->class);
+        if( null !== $this->container ) {
+            $this->container->add($dependency);
+            if( $this->alias ) {
+                $this->container->alias($this->alias, $this->class);
+            }
         }
 
         return $dependency;

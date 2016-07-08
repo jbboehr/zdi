@@ -5,7 +5,7 @@ namespace zdi;
 use Closure;
 use Exception;
 
-use zdi\Dependency\Builder as DependencyBuilder;
+use zdi\Dependency\AliasDependency;
 use zdi\Dependency\AbstractDependency;
 use zdi\Dependency\ClosureDependency;
 use zdi\Dependency\DefaultDependency;
@@ -19,11 +19,6 @@ use zdi\Param\ValueParam;
 class Container implements ContainerInterface
 {
     /**
-     * @var string[]
-     */
-    private $aliases = array();
-
-    /**
      * @var AbstractDependency[]
      */
     private $dependencies = array();
@@ -36,40 +31,12 @@ class Container implements ContainerInterface
     /**
      * Container constructor.
      * @param array $values
+     * @param array $dependencies
      */
-    public function __construct($values = array())
+    public function __construct(array $values = array(), array $dependencies = array())
     {
         $this->values = $values;
-    }
-
-    /**
-     * @param AbstractDependency $dependency
-     * @return $this
-     */
-    public function add(AbstractDependency $dependency)
-    {
-        $this->dependencies[$dependency->getKey()] = $dependency;
-        return $this;
-    }
-
-    /**
-     * @param string $interface
-     * @param string $class
-     * @return $this
-     */
-    public function alias($interface, $class)
-    {
-        $this->aliases[$interface] = $class;
-        return $this;
-    }
-
-    /**
-     * @param string|null $class
-     * @return DependencyBuilder
-     */
-    public function define($class = null)
-    {
-        return new DependencyBuilder($this, $class);
+        $this->dependencies = $dependencies;
     }
 
     /**
@@ -82,18 +49,14 @@ class Container implements ContainerInterface
             return $this->values[$key];
         }
 
-        // Use an alias
-        if( isset($this->aliases[$key]) ) {
-            return $this->get($this->aliases[$key]);
-        }
-
         // Create the dependency if not available
         if( isset($this->dependencies[$key]) ) {
             $dependency = $this->dependencies[$key];
         } else if( is_a($this, $key) ) {
             return $this;
         } else if( class_exists($key, true) ) {
-            $dependency = $this->define($key)->build();
+            $builder = new Dependency\Builder(null, $key);
+            $dependency = $builder->build();
         } else {
             throw new Exception("Not defined");
         }
@@ -105,6 +68,8 @@ class Container implements ContainerInterface
             $object = $this->makeClosure($dependency);
         } else if( $dependency instanceof ProviderDependency ) {
             $object = $this->makeProvider($dependency);
+        } else if( $dependency instanceof AliasDependency ) {
+            return $this->get($dependency->getAlias());
         } else {
             throw new Exception('unknown dependency type');
         }
@@ -122,24 +87,7 @@ class Container implements ContainerInterface
     public function has($key)
     {
         return isset($this->values[$key])
-            || isset($this->aliases[$key])
             || isset($this->dependencies[$key]);
-    }
-
-    /**
-     * @return AbstractDependency[]
-     */
-    public function getDependencies()
-    {
-        return $this->dependencies;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getAliases()
-    {
-        return $this->aliases;
     }
 
     /**
@@ -165,11 +113,6 @@ class Container implements ContainerInterface
     {
         if( $value instanceof AbstractDependency ) {
             $this->dependencies[$offset] = $value;
-        } else if( $value instanceof \Closure ) {
-            $this->define()
-                ->name($offset)
-                ->using($value)
-                ->build();
         } else {
             $this->values[$offset] = $value;
         }
@@ -180,7 +123,6 @@ class Container implements ContainerInterface
      */
     public function offsetUnset($offset)
     {
-        unset($this->aliases[$offset]);
         unset($this->dependencies[$offset]);
         unset($this->values[$offset]);
     }

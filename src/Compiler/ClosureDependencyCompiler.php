@@ -18,6 +18,11 @@ use SuperClosure\Exception\ClosureAnalysisException;
 use zdi\ContainerInterface;
 use zdi\Dependency\ClosureDependency;
 
+/**
+ * Class ClosureDependencyCompiler
+ * @package zdi\Compiler
+ * @todo translate magic constants
+ */
 class ClosureDependencyCompiler implements DependencyCompilerInterface
 {
     /**
@@ -77,7 +82,7 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
             ->setDocComment('/**
                                * @var ' . $dependency->getClass() . '
                                */');
-        
+
         return array($property, $method);
     }
 

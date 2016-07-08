@@ -10,6 +10,7 @@ use PhpParser\Node;
 use PhpParser\PrettyPrinter;
 
 use zdi\Container;
+use zdi\Dependency\AliasDependency;
 use zdi\Utils;
 
 use zdi\Dependency\AbstractDependency;
@@ -39,25 +40,20 @@ class Compiler
     private $uniques;
 
     /**
-     * @var Container
+     * @var AbstractDependency[]
      */
-    private $container;
-
-    /**
-     * @var array
-     */
-    private $blacklist = array();
+    private $dependencies;
 
     /**
      * Compiler constructor.
-     * @param Container $container
-     * @param $namespace
-     * @param $class
+     * @param AbstractDependency[] $dependencies
+     * @param string $class
+     * @param string $namespace
      * @param BuilderFactory|null $builderFactory
      */
-    public function __construct(Container $container, $namespace, $class, BuilderFactory $builderFactory = null)
+    public function __construct(array $dependencies, $namespace, $class, BuilderFactory $builderFactory = null)
     {
-        $this->container = $container;
+        $this->dependencies = $dependencies;
         $this->namespace = $namespace;
         $this->class = $class;
 
@@ -65,68 +61,6 @@ class Compiler
             $builderFactory = new BuilderFactory();
         }
         $this->builderFactory = $builderFactory;
-    }
-
-    /**
-     * @param string $class
-     * @return $this
-     */
-    public function blacklist($class)
-    {
-        $this->blacklist[$class] = true;
-        return $this;
-    }
-
-    /**
-     * @param string $directory
-     * @return $this
-     */
-    public function scanDir($directory)
-    {
-        //$before = get_declared_classes();
-
-        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
-        foreach( $it as $file ) {
-            $path = $file->getPathName();
-            if( substr($path, -4) !== '.php' ) {
-                continue;
-            }
-            require_once $path;
-        }
-
-        /**
-        $after = get_declared_classes();
-        $diff = array_diff($after, $before);
-
-        foreach( $diff as $class ) {
-            if( !isset($this->blacklist[$class]) && !$this->container->has($class) ) {
-                $this->container->define($class)->build();
-            }
-        }
-         **/
-
-        return $this;
-    }
-
-    /**
-     * @param string $namespace
-     * @return $this
-     */
-    public function scanNamespace($namespace)
-    {
-        foreach( get_declared_classes() as $class ) {
-            if( 0 === strpos($class, $namespace) ) {
-                if( !isset($this->blacklist[$class]) && !$this->container->has($class) ) {
-                    try {
-                        $this->container->define($class)->build();
-                    } catch( \Exception $e ) {
-                        // @todo fixme
-                    }
-                }
-            }
-        }
-
-        return $this;
     }
 
     /**
@@ -151,9 +85,7 @@ class Compiler
      */
     private function compileClass()
     {
-        $container = $this->container;
-        $dependencies = $container->getDependencies();
-        $aliases = $container->getAliases();
+        $dependencies = $this->dependencies;
 
         $class = $this->builderFactory->class($this->class)
             ->extend('CompiledContainer');
@@ -161,39 +93,40 @@ class Compiler
         $mapNodes = array();
 
         foreach( $dependencies as $dependency ) {
-            $identifier = $dependency->getIdentifier();
-
-            // Add method
-            $class->addStmts($this->compileDependency($dependency));
-
-            // Add map entry
-            $mapNodes[] = new Node\Expr\ArrayItem(
-                new Node\Scalar\String_($identifier),
-                new Node\Scalar\String_($this->resolveUniqueIdentifier($dependency->getKey()))
-            );
-
-            $this->uniques[strtolower($identifier)] = $identifier;
-        }
-
-        // Add aliases (@todo)
-        foreach( $aliases as $key => $alias ) {
-            $keyIdentifier = Utils::classToIdentifier($key);
-            $aliasIdentifier = Utils::classToIdentifier($alias);
-            $mapNodes[] = new Node\Expr\ArrayItem(
-                new Node\Scalar\String_(Utils::classToIdentifier($alias)),
-                new Node\Scalar\String_($keyIdentifier)
-            );
-            $mapNodes[] = new Node\Expr\ArrayItem(
-                new Node\Scalar\String_($keyIdentifier),
-                new Node\Scalar\String_($key)
-            );
-            if( isset($dependencies[$alias]) ) {
-                if( !isset($this->uniques[strtolower($keyIdentifier)]) ) {
-                    $method = $this->builderFactory->method($keyIdentifier)
-                        ->makeProtected();
-                    $method->addStmt(new Node\Stmt\Return_(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $aliasIdentifier)));
-                    $class->addStmt($method);
+            if( $dependency instanceof AliasDependency ) {
+                $key = $dependency->getClass();
+                $alias = $dependency->getAlias();
+                $keyIdentifier = Utils::classToIdentifier($dependency->getClass());
+                $aliasIdentifier = Utils::classToIdentifier($dependency->getAlias());
+                $mapNodes[] = new Node\Expr\ArrayItem(
+                    new Node\Scalar\String_(Utils::classToIdentifier($alias)),
+                    new Node\Scalar\String_($keyIdentifier)
+                );
+                $mapNodes[] = new Node\Expr\ArrayItem(
+                    new Node\Scalar\String_($keyIdentifier),
+                    new Node\Scalar\String_($key)
+                );
+                if( isset($dependencies[$alias]) ) {
+                    if( !isset($this->uniques[strtolower($keyIdentifier)]) ) {
+                        $method = $this->builderFactory->method($keyIdentifier)
+                            ->makeProtected();
+                        $method->addStmt(new Node\Stmt\Return_(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $aliasIdentifier)));
+                        $class->addStmt($method);
+                    }
                 }
+            } else {
+                $identifier = $dependency->getIdentifier();
+
+                // Add method
+                $class->addStmts($this->compileDependency($dependency));
+
+                // Add map entry
+                $mapNodes[] = new Node\Expr\ArrayItem(
+                    new Node\Scalar\String_($identifier),
+                    new Node\Scalar\String_($this->resolveUniqueIdentifier($dependency->getKey()))
+                );
+
+                $this->uniques[strtolower($identifier)] = $identifier;
             }
         }
 
@@ -227,7 +160,7 @@ class Compiler
         } else if( $dependency instanceof ClosureDependency ) {
             return new ClosureDependencyCompiler($this->builderFactory, $dependency);
         } else {
-            throw new Exception('Unsupported dependency type');
+            throw new Exception('Unsupported dependency type: ' . get_class($dependency));
         }
     }
 
