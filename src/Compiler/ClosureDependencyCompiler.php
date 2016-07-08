@@ -71,7 +71,14 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
         }
 
         $method->addStmts($stmts);
-        return $method;
+
+        $property = $this->builderFactory->property($identifier)
+            ->makePrivate()
+            ->setDocComment('/**
+                               * @var ' . $dependency->getClass() . '
+                               */');
+        
+        return array($property, $method);
     }
 
     /**

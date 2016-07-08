@@ -61,7 +61,7 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
         if( $dependency->isFactory() ) {
             $ret = new Node\Stmt\Return_($construct);
             $method->addStmt($ret);
-            return $method;
+            //return $method;
         } else {
             $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
             $retProp = new Node\Stmt\Return_($prop);
@@ -70,8 +70,16 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
                 array('stmts' => array(new Node\Expr\Assign($prop, $construct)))
             ));
             $method->addStmt($retProp);
-            return $method;
+            //return $method;
         }
+
+        $property = $this->builderFactory->property($identifier)
+            ->makePrivate()
+            ->setDocComment('/**
+                               * @var ' . $dependency->getClass() . '
+                               */');
+
+        return array($property, $method);
     }
 
     /**

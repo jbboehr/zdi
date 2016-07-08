@@ -2,12 +2,12 @@
 
 namespace zdi\Compiler;
 
-use PhpParser\Builder;
+use PhpParser\BuilderAbstract;
 
 interface DependencyCompilerInterface
 {
     /**
-     * @return Builder\Method
+     * @return BuilderAbstract[]
      */
     public function compile();
 }

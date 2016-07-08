@@ -164,16 +164,7 @@ class Compiler
             $identifier = $dependency->getIdentifier();
 
             // Add method
-            $method = $this->compileDependency($dependency);
-            $class->addStmt($method);
-
-            // Add property for method
-            $property = $this->builderFactory->property($identifier)
-                ->makePrivate()
-                ->setDocComment('/**
-                                  * @var ' . $dependency->getClass() . '
-                                  */');
-            $class->addStmt($property);
+            $class->addStmts($this->compileDependency($dependency));
 
             // Add map entry
             $mapNodes[] = new Node\Expr\ArrayItem(
@@ -184,7 +175,7 @@ class Compiler
             $this->uniques[strtolower($identifier)] = $identifier;
         }
 
-        // Add aliases
+        // Add aliases (@todo)
         foreach( $aliases as $key => $alias ) {
             $keyIdentifier = Utils::classToIdentifier($key);
             $aliasIdentifier = Utils::classToIdentifier($alias);
@@ -216,7 +207,7 @@ class Compiler
 
     /**
      * @param AbstractDependency $dependency
-     * @return Builder\Method
+     * @return \PhpParser\BuilderAbstract[]
      * @throws Exception
      */
     private function compileDependency(AbstractDependency $dependency)
