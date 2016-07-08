@@ -2,25 +2,19 @@
 
 namespace zdi\Compiler;
 
+use Exception;
+
 use PhpParser\BuilderFactory;
 use PhpParser\Builder;
 use PhpParser\Node;
 use PhpParser\PrettyPrinter;
 
-use zdi\AbstractContainer;
 use zdi\Container;
 use zdi\Utils;
 
-use zdi\ContainerInterface;
 use zdi\Dependency\AbstractDependency;
 use zdi\Dependency\ClosureDependency;
-use zdi\Dependency\Dependency;
-
-use zdi\Param\ClassParam;
-use zdi\Param\ParamInterface;
-use zdi\Param\LookupParam;
-use zdi\Param\NamedParam;
-use zdi\Param\ValueParam;
+use zdi\Dependency\DefaultDependency;
 
 class Compiler
 {
@@ -29,10 +23,19 @@ class Compiler
      */
     private $builderFactory;
 
+    /**
+     * @var string
+     */
     private $namespace;
 
+    /**
+     * @var string
+     */
     private $class;
 
+    /**
+     * @var array
+     */
     private $uniques;
 
     /**
@@ -40,8 +43,18 @@ class Compiler
      */
     private $container;
 
+    /**
+     * @var array
+     */
     private $blacklist = array();
 
+    /**
+     * Compiler constructor.
+     * @param Container $container
+     * @param $namespace
+     * @param $class
+     * @param BuilderFactory|null $builderFactory
+     */
     public function __construct(Container $container, $namespace, $class, BuilderFactory $builderFactory = null)
     {
         $this->container = $container;
@@ -54,12 +67,20 @@ class Compiler
         $this->builderFactory = $builderFactory;
     }
 
+    /**
+     * @param string $class
+     * @return $this
+     */
     public function blacklist($class)
     {
         $this->blacklist[$class] = true;
         return $this;
     }
 
+    /**
+     * @param string $directory
+     * @return $this
+     */
     public function scanDir($directory)
     {
         //$before = get_declared_classes();
@@ -83,8 +104,14 @@ class Compiler
             }
         }
          **/
+
+        return $this;
     }
 
+    /**
+     * @param string $namespace
+     * @return $this
+     */
     public function scanNamespace($namespace)
     {
         foreach( get_declared_classes() as $class ) {
@@ -98,8 +125,14 @@ class Compiler
                 }
             }
         }
+
+        return $this;
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     public function compile()
     {
         $class = $this->compileClass();
@@ -112,10 +145,9 @@ class Compiler
         return $prettyPrinter->prettyPrintFile(array($node));
     }
 
-
     /**
      * @return Builder\Class_
-     * @throws \Exception
+     * @throws Exception
      */
     private function compileClass()
     {
@@ -144,17 +176,15 @@ class Compiler
             $class->addStmt($property);
 
             // Add map entry
-            //if( $dependency->getClass() ) {
-                $mapNodes[] = new Node\Expr\ArrayItem(
-                    new Node\Scalar\String_($identifier),
-                    new Node\Scalar\String_($this->resolveUniqueIdentifier($dependency->getKey()))
-                );
-            //}
+            $mapNodes[] = new Node\Expr\ArrayItem(
+                new Node\Scalar\String_($identifier),
+                new Node\Scalar\String_($this->resolveUniqueIdentifier($dependency->getKey()))
+            );
 
             $this->uniques[strtolower($identifier)] = $identifier;
         }
 
-        // Add aliases (@todo)
+        // Add aliases
         foreach( $aliases as $key => $alias ) {
             $keyIdentifier = Utils::classToIdentifier($key);
             $aliasIdentifier = Utils::classToIdentifier($alias);
@@ -187,21 +217,27 @@ class Compiler
     /**
      * @param AbstractDependency $dependency
      * @return Builder\Method
-     * @throws \Exception
+     * @throws Exception
      */
     private function compileDependency(AbstractDependency $dependency)
     {
-        if( $dependency instanceof Dependency ) {
-            $compiler = new DefaultDependencyCompiler($this->builderFactory, $dependency);
-            //return $this->compileDefault($dependency);
-        } else if( $dependency instanceof ClosureDependency ) {
-            //return $this->compileClosure($dependency);
-            $compiler = new ClosureDependencyCompiler($this->builderFactory, $dependency);
-        } else {
-            throw new \Exception('Unsupported dependency type');
-        }
+        return $this->makeDependencyCompiler($dependency)->compile();
+    }
 
-        return $compiler->compile();
+    /**
+     * @param AbstractDependency $dependency
+     * @return DependencyCompilerInterface
+     * @throws Exception
+     */
+    private function makeDependencyCompiler(AbstractDependency $dependency)
+    {
+        if( $dependency instanceof DefaultDependency ) {
+            return new DefaultDependencyCompiler($this->builderFactory, $dependency);
+        } else if( $dependency instanceof ClosureDependency ) {
+            return new ClosureDependencyCompiler($this->builderFactory, $dependency);
+        } else {
+            throw new Exception('Unsupported dependency type');
+        }
     }
 
     private function resolveUniqueIdentifier($key)

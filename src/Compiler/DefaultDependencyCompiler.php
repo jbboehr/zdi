@@ -2,19 +2,19 @@
 
 namespace zdi\Compiler;
 
+use Exception;
+
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
-use zdi\ContainerInterface;
-use zdi\Dependency\Dependency as DefaultDependency;
+use zdi\Dependency\DefaultDependency;
 
 use zdi\Param\ClassParam;
 use zdi\Param\ParamInterface;
-use zdi\Param\LookupParam;
 use zdi\Param\NamedParam;
 use zdi\Param\ValueParam;
 
-class DefaultDependencyCompiler extends AbstractDependencyCompiler
+class DefaultDependencyCompiler implements DependencyCompilerInterface
 {
     /**
      * @var BuilderFactory
@@ -26,12 +26,20 @@ class DefaultDependencyCompiler extends AbstractDependencyCompiler
      */
     private $dependency;
 
+    /**
+     * DefaultDependencyCompiler constructor.
+     * @param BuilderFactory $builderFactory
+     * @param DefaultDependency $dependency
+     */
     public function __construct(BuilderFactory $builderFactory, DefaultDependency $dependency)
     {
         $this->builderFactory = $builderFactory;
         $this->dependency = $dependency;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function compile()
     {
         $dependency = $this->dependency;
@@ -69,15 +77,13 @@ class DefaultDependencyCompiler extends AbstractDependencyCompiler
     /**
      * @param ParamInterface $param
      * @return Node
-     * @throws \Exception
+     * @throws Exception
      */
     private function compileParam(ParamInterface $param)
     {
         if( $param instanceof ClassParam ) {
             $identifier = $param->getIdentifier();
             return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $identifier);
-        } else if( $param instanceof LookupParam ) {
-            return new Node\Scalar\String_('Not yet implemented');
         } else if( $param instanceof NamedParam ) {
             return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
                 new Node\Arg(new Node\Scalar\String_($param->getName()))
@@ -85,10 +91,15 @@ class DefaultDependencyCompiler extends AbstractDependencyCompiler
         } else if( $param instanceof ValueParam ) {
             return new Node\Arg($this->compileValue($param->getValue()));
         } else {
-            throw new \Exception('Unknown param type');
+            throw new Exception('Unknown param type');
         }
     }
 
+    /**
+     * @param mixed $value
+     * @return Node\Expr
+     * @throws Exception
+     */
     private function compileValue($value)
     {
         if( is_array($value) ) {
@@ -96,7 +107,7 @@ class DefaultDependencyCompiler extends AbstractDependencyCompiler
             foreach( $value as $k => $v ) {
                 $items[] = new Node\Expr\ArrayItem($this->compileValue($v), $this->compileValue($k));
             }
-            return new Node\Expr\Array_($items); // @todo FIXME
+            return new Node\Expr\Array_($items);
         } else if( is_string($value) ) {
             return new Node\Scalar\String_($value);
         } else if( is_int($value) ) {
@@ -108,7 +119,7 @@ class DefaultDependencyCompiler extends AbstractDependencyCompiler
         } else if( is_bool($value) ) {
             return new Node\Expr\ConstFetch(new Node\Name($value ? 'true' : 'false'));
         } else {
-            throw new \Exception('Unknown value type: ' . gettype($value));
+            throw new Exception('Unknown value type: ' . gettype($value));
         }
     }
 }

@@ -4,10 +4,10 @@ namespace zdi\Compiler;
 
 use PhpParser\Builder;
 
-abstract class AbstractDependencyCompiler
+interface DependencyCompilerInterface
 {
     /**
      * @return Builder\Method
      */
-    abstract public function compile();
+    public function compile();
 }

@@ -4,6 +4,10 @@ namespace zdi;
 
 class Utils
 {
+    /**
+     * @param string $class
+     * @return string
+     */
     static public function classToIdentifier($class)
     {
         if( static::isValidIdentifier($class) ) {
@@ -13,6 +17,10 @@ class Utils
         //return str_replace(' ', '', ucwords(str_replace(array('\\', '_'), ' ', $class)));
     }
 
+    /**
+     * @param string $class
+     * @return boolean
+     */
     static public function isValidIdentifier($class)
     {
         return (bool) preg_match('/^[a-z][a-z0-9_]+$/i', $class);

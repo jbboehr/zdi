@@ -24,8 +24,8 @@ abstract class AbstractDependency
     /**
      * AbstractDependency constructor.
      * @param $class
-     * @param bool $factory
-     * @param null|string $name
+     * @param boolean $factory
+     * @param string|null $name
      */
     public function __construct($class, $factory = false, $name = null)
     {
@@ -43,7 +43,7 @@ abstract class AbstractDependency
     }
 
     /**
-     * @return bool
+     * @return boolean
      */
     public function isFactory()
     {
@@ -65,24 +65,26 @@ abstract class AbstractDependency
     {
         if( $this->name ) {
             return $this->name;
-        } else if( $this->class ) {
+        } else /*if( $this->class )*/ {
             return $this->class;
-        } else {
-            throw new \Exception('Dependency must have a class or name');
         }
     }
 
+    /**
+     * @return string
+     */
     public function getIdentifier()
     {
         if( $this->name ) {
             return Utils::classToIdentifier($this->name);
-        } else if( $this->class ) {
+        } else /*if( $this->class )*/ {
             return Utils::classToIdentifier($this->class);
-        } else {
-            throw new \Exception('Dependency must have a class or name');
         }
     }
 
+    /**
+     * @return string
+     */
     public function getTypeHint()
     {
         if( $this->class ) {

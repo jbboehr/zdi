@@ -2,13 +2,15 @@
 
 namespace zdi\Compiler;
 
+use Exception;
+use ReflectionFunction;
+
 use PhpParser\BuilderFactory;
 use PhpParser\NodeTraverser;
 use PhpParser\Node;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Error as ParserError;
 use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter\Standard as NodePrinter;
 
 use SuperClosure\Analyzer\Visitor\ClosureLocatorVisitor;
 use SuperClosure\Exception\ClosureAnalysisException;
@@ -16,7 +18,7 @@ use SuperClosure\Exception\ClosureAnalysisException;
 use zdi\ContainerInterface;
 use zdi\Dependency\ClosureDependency;
 
-class ClosureDependencyCompiler extends AbstractDependencyCompiler
+class ClosureDependencyCompiler implements DependencyCompilerInterface
 {
     /**
      * @var BuilderFactory
@@ -28,12 +30,20 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
      */
     private $dependency;
 
+    /**
+     * ClosureDependencyCompiler constructor.
+     * @param BuilderFactory $builderFactory
+     * @param ClosureDependency $dependency
+     */
     public function __construct(BuilderFactory $builderFactory, ClosureDependency $dependency)
     {
         $this->builderFactory = $builderFactory;
         $this->dependency = $dependency;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function compile()
     {
         $dependency = $this->dependency;
@@ -45,7 +55,7 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
                               * @return ' . $dependency->getTypeHint() . '
                               */');
 
-        $ast = $this->locateClosure(new \ReflectionFunction($dependency->getClosure()));
+        $ast = $this->locateClosure(new ReflectionFunction($dependency->getClosure()));
         $paramName = $this->getContainerParamName($ast);
         $stmts = $ast->getStmts();
         $stmts = $this->translateContainer($stmts, $paramName);
@@ -64,6 +74,11 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
         return $method;
     }
 
+    /**
+     * @param Node\Expr\Closure $ast
+     * @return string|null
+     * @throws \Exception
+     */
     private function getContainerParamName(Node\Expr\Closure $ast)
     {
         $params = $ast->getParams();
@@ -89,6 +104,11 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
         return $param->name;
     }
 
+    /**
+     * @param Node[] $stmts
+     * @param string $paramName
+     * @return Node[]
+     */
     private function translateContainer(array $stmts, $paramName)
     {
         $visitor = new Visitor\ContainerTranslatorVisitor($paramName);
@@ -97,6 +117,10 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
         return $fileTraverser->traverse($stmts);
     }
 
+    /**
+     * @param Node[] $stmts
+     * @return Node[]
+     */
     private function translateReturnStatements(array $stmts)
     {
         // Ignore factories
@@ -110,7 +134,11 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
         return $fileTraverser->traverse($stmts);
     }
 
-    private function locateClosure(\ReflectionFunction $reflectionFunction)
+    /**
+     * @param ReflectionFunction $reflectionFunction
+     * @return Node\Expr\Closure
+     */
+    private function locateClosure(ReflectionFunction $reflectionFunction)
     {
         try {
             $locator = new ClosureLocatorVisitor($reflectionFunction);
@@ -136,7 +164,7 @@ class ClosureDependencyCompiler extends AbstractDependencyCompiler
         return $locator->closureNode;
     }
 
-    private function getFileAst(\ReflectionFunction $reflection)
+    private function getFileAst(ReflectionFunction $reflection)
     {
         $fileName = $reflection->getFileName();
         if (!file_exists($fileName)) {

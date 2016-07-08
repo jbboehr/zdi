@@ -4,7 +4,7 @@ namespace zdi\Dependency;
 
 use zdi\Param\ParamInterface;
 
-class Dependency extends AbstractDependency
+class DefaultDependency extends AbstractDependency
 {
     /**
      * @var ParamInterface[]
