@@ -2,115 +2,89 @@
 
 namespace zdi\Tests\Definition;
 
-use zdi\Container\CompileBuilder;
-use zdi\Container\DefaultBuilder;
-use zdi\Container\PrecompiledBuilder;
+use zdi\Container\ContainerBuilder;
 use zdi\Tests\Fixture;
-use zdi\Container\Builder;
 
 class BuilderTest extends \PHPUnit_Framework_TestCase
 {
-    public function testDefaultBuilderIsNeverReady()
+    public function testCompileBuilderNeedsRebuild()
     {
-        $builder = new DefaultBuilder();
-        $this->configureBuilder($builder);
-        $this->assertFalse($builder->isReady());
-    }
-
-    public function testCompileBuilderStat()
-    {
-        $builder = $this->getCompileBuilder();
+        $builder = $this->getBuilder();
         $builder->stat(true);
 
-        // The builder should be 'invalid' as the file hasn't been generated yet
-        $this->assertFalse($builder->isValid());
+        // The builder should need rebuild as the file doesn't exist yet
+        $this->assertTrue($builder->needsRebuild());
 
         // Generate the file
         $container = $builder->build();
 
-        // The builder should be 'valid' as the container file is newer than any definitions
-        $this->assertTrue($builder->isValid());
+        // The builder always not need rebuild as the container file is newer than any definitions
+        $this->assertFalse($builder->needsRebuild());
 
-        // touch the container to before a definition, then it should be invalid
+        // touch the container to before a definition, then it should be need rebuild again
         $r1 = new \ReflectionClass(Fixture\NoArguments::class);
         $r2 = new \ReflectionClass($container);
         $orig = filemtime($r2->getFileName());
         touch($r2->getFileName(), filemtime($r1->getFileName()) - 1);
-        $this->assertFalse($builder->isValid());
+        $this->assertTrue($builder->needsRebuild());
         // @todo revert this on failure?
         touch($r2->getFileName(), $orig);
+
+        // Dynamic always requires rebuild
+        $builder2 = (new ContainerBuilder());
+        $this->assertTrue($builder2->needsRebuild());
     }
 
-    public function testCompileBuilderTtl()
+    public function testCompileBuilderNeedsRedefine()
     {
-        $builder = $this->getCompileBuilder();
+        $builder = $this->getBuilder();
 
-        // The builder should be 'unready' as the file hasn't been generated yet
+        // The builder should need redefine as the file hasn't been generated yet
         $builder->ttl(3600);
-        $this->assertFalse($builder->isReady());
+        $this->assertTrue($builder->needsRedefine());
 
-        // -1 disables ttl checking (always ready)
+        // -1 disables ttl checking (never needs redefine)
         $builder->ttl(-1);
-        $this->assertTrue($builder->isReady());
+        $this->assertFalse($builder->needsRedefine());
 
-        // 0 disables ttl checking (never ready)
+        // 0 disables ttl checking (always needs redefine)
         $builder->ttl(0);
-        $this->assertFalse($builder->isReady());
+        $this->assertTrue($builder->needsRedefine());
 
         // Build the container
         $container = $builder->build();
 
-        // Set a TTL and check if it's 'ready'
+        // Set a TTL and check if it needs redefine
         $builder->ttl(3600);
-        $this->assertTrue($builder->isReady());
+        $this->assertFalse($builder->needsRedefine());
 
-        // Touch the file, is should be 'unready'
+        // Touch the file, it should need redefine
         $r = new \ReflectionClass($container);
         $builder->ttl(1200);
         $orig = filemtime($r->getFileName());
         touch($r->getFileName(), $orig - 3600);
-        $this->assertFalse($builder->isReady());
+        $this->assertTrue($builder->needsRedefine());
         touch($r->getFileName(), $orig);
+
+        // Precompiled never needs redefine
+        $builder->precompiled(true);
+        $this->assertFalse($builder->needsRedefine());
+
+        // Dynamic always requires redefine
+        $builder2 = (new ContainerBuilder());
+        $this->assertTrue($builder2->needsRedefine());
     }
 
-    public function testPrecompiledBuilder()
-    {
-        $builder1 = $this->getCompileBuilder();
-        $container = $builder1->build();
-
-        $r = new \ReflectionClass($container);
-        $class = $r->getName();
-        $pos = strrpos($class, '\\');
-        $namespace = substr($class, 0, $pos);
-        $class = substr($class, $pos + 1);
-
-        $builder2 = new PrecompiledBuilder($r->getFileName(), $namespace, $class);
-
-        // Should always be 'ready'
-        $this->assertTrue($builder2->isReady());
-
-        // Build the container againt
-        $container2 = $builder2->build();
-
-        // Check if it works
-        $this->assertInstanceOf(Fixture\NoArguments::class, $container2->get(Fixture\NoArguments::class));
-    }
-
-    private function getCompileBuilder()
+    private function getBuilder()
     {
         list($class, $tmpFile) = $this->mktmp();
         $namespace = 'zdi\\Tests\\Gen';
-        $builder = new CompileBuilder($tmpFile, $namespace, $class);
-        $this->configureBuilder($builder);
-        return $builder;
-    }
-
-
-    private function configureBuilder(Builder $builder)
-    {
+        $builder = new ContainerBuilder();
+        $builder->file($tmpFile);
+        $builder->className($namespace . '\\' . $class);
         $builder->define(Fixture\NoArguments::class)
             ->build();
-
+        return $builder;
     }
 
     private function mktmp()

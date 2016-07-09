@@ -3,8 +3,7 @@
 namespace zdi\Tests;
 
 use zdi\Container;
-use zdi\Container\Builder;
-use zdi\Container\DefaultBuilder;
+use zdi\Container\ContainerBuilder as Builder;
 use zdi\Container\CompileBuilder;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
@@ -619,10 +618,15 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
         } while( file_exists($tmpFile) );
 
         // Make the container builders
-        $defaultContainerBuilder = new DefaultBuilder();
-        $compileContainerBuilder = new CompileBuilder($tmpFile, 'zdi\\Tests\\Gen', $className);
-        $compileContainerBuilder->ttl(0);
-        $compileContainerBuilder->stat(false);
+        $defaultContainerBuilder = new Builder();
+
+        $compileContainerBuilder = new Builder();
+        $compileContainerBuilder->ttl(0)
+            ->stat(false)
+            ->file($tmpFile)
+            ->className('zdi\\Tests\\Gen\\' . $className)
+            ;
+
         return array(
             array($defaultContainerBuilder),
             array($compileContainerBuilder),

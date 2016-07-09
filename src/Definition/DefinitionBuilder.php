@@ -7,7 +7,7 @@ use ReflectionClass;
 use ReflectionMethod;
 
 use zdi\Container;
-use zdi\Container\Builder as ContainerBuilder;
+use zdi\Container\ContainerBuilder;
 use zdi\Definition;
 use zdi\Exception;
 use zdi\Param;

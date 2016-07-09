@@ -46,12 +46,20 @@ class Compiler
      * @param string $namespace
      * @param BuilderFactory|null $builderFactory
      */
-    public function __construct(array $definitions, $namespace, $class, BuilderFactory $builderFactory = null)
+    public function __construct(array $definitions, $className, BuilderFactory $builderFactory = null)
     {
         $this->definitions = $definitions;
-        $this->namespace = $namespace;
-        $this->class = $class;
 
+        // Extract namespace/class
+        $pos = strrpos($className, '\\');
+        if( false === $pos ) {
+            $this->class = $className;
+        } else {
+            $this->namespace = substr($className, 0, $pos);
+            $this->class = substr($className, $pos + 1);
+        }
+
+        // Make builder factory
         if( !$builderFactory ) {
             $builderFactory = new BuilderFactory();
         }
