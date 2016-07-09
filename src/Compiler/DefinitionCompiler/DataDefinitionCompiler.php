@@ -1,20 +1,19 @@
 <?php
 
-namespace zdi\Compiler;
+namespace zdi\Compiler\DefinitionCompiler;
 
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
-use zdi\ContainerInterface;
-use zdi\Dependency\DefaultDependency;
-use zdi\Exception\DomainException;
-use zdi\Param\ClassParam;
-use zdi\Param\ParamInterface;
-use zdi\Param\NamedParam;
-use zdi\Param\ValueParam;
+use zdi\Container;
+use zdi\Compiler\DefinitionCompiler;
+use zdi\Definition;
+use zdi\Definition\DataDefinition;
+use zdi\Exception;
+use zdi\Param;
 use zdi\Utils;
 
-class DefaultDependencyCompiler implements DependencyCompilerInterface
+class DataDefinitionCompiler implements DefinitionCompiler
 {
     /**
      * @var BuilderFactory
@@ -22,19 +21,18 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
     private $builderFactory;
 
     /**
-     * @var DefaultDependency
+     * @var Definition
      */
-    private $dependency;
+    private $definition;
 
     /**
-     * DefaultDependencyCompiler constructor.
      * @param BuilderFactory $builderFactory
-     * @param DefaultDependency $dependency
+     * @param DataDefinition $definition
      */
-    public function __construct(BuilderFactory $builderFactory, DefaultDependency $dependency)
+    public function __construct(BuilderFactory $builderFactory, DataDefinition $definition)
     {
         $this->builderFactory = $builderFactory;
-        $this->dependency = $dependency;
+        $this->definition = $definition;
     }
 
     /**
@@ -42,24 +40,24 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
      */
     public function compile()
     {
-        $dependency = $this->dependency;
-        $identifier = $dependency->getIdentifier();
+        $definition = $this->definition;
+        $identifier = $definition->getIdentifier();
 
         // Prepare method
         $method = $this->builderFactory->method($identifier)
             ->makeProtected()
             ->setDocComment('/**
-                              * @return ' . $dependency->getTypeHint() . '
+                              * @return ' . $definition->getTypeHint() . '
                               */');
 
         // Prepare instance check
         $property = null;
-        if( !$dependency->isFactory() ) {
+        if( !$definition->isFactory() ) {
             // Add property to store instance
             $property = $this->builderFactory->property($identifier)
                 ->makePrivate()
                 ->setDocComment('/**
-                               * @var ' . $dependency->getTypeHint() . '
+                               * @var ' . $definition->getTypeHint() . '
                                */');
 
             // Add instance check
@@ -71,7 +69,7 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
         }
 
         // Prepare return variable
-        if( $dependency->isFactory() ) {
+        if( $definition->isFactory() ) {
             $retVar = new Node\Expr\Variable($identifier);
         } else {
             $retVar = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
@@ -79,13 +77,13 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
 
         // Compile constructor
         $paramNodes = array();
-        foreach( $dependency->getParams() as $position => $param ) {
+        foreach( $definition->getParams() as $position => $param ) {
             $paramNodes[] = $this->compileParam($param);
         }
-        $construct = new Node\Expr\New_(new Node\Name\FullyQualified($dependency->getClass()), $paramNodes);
+        $construct = new Node\Expr\New_(new Node\Name\FullyQualified($definition->getClass()), $paramNodes);
 
         // Compile setters
-        $setters = $this->compileSetters($dependency->getSetters(), $retVar);
+        $setters = $this->compileSetters($definition->getSetters(), $retVar);
 
         // Add return statement
         if( $setters ) {
@@ -103,7 +101,7 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
     }
 
     /**
-     * @param ParamInterface[] $setters
+     * @param Param[] $setters
      * @param Node\Expr $var
      * @return Node\Stmt[]
      */
@@ -119,16 +117,16 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
     }
 
     /**
-     * @param ParamInterface $param
+     * @param Param $param
      * @return Node\Expr
-     * @throws DomainException
+     * @throws Exception\DomainException
      */
-    private function compileParam(ParamInterface $param)
+    private function compileParam(Param $param)
     {
-        if( $param instanceof ClassParam ) {
+        if( $param instanceof Param\ClassParam ) {
             $identifier = $param->getIdentifier();
             // Just return this if it's asking for a container
-            if( $identifier === Utils::classToIdentifier(ContainerInterface::class) ) {
+            if( $identifier === Utils::classToIdentifier(Container::class) ) {
                 return new Node\Expr\Variable('this');
             }
             $fetch = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $identifier);
@@ -144,21 +142,21 @@ class DefaultDependencyCompiler implements DependencyCompilerInterface
                 );
             }
             return $fetch;
-        } else if( $param instanceof NamedParam ) {
+        } else if( $param instanceof Param\NamedParam ) {
             return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
                 new Node\Arg(new Node\Scalar\String_($param->getName()))
             ));
-        } else if( $param instanceof ValueParam ) {
+        } else if( $param instanceof Param\ValueParam ) {
             return new Node\Arg($this->compileValue($param->getValue()));
         } else {
-            throw new DomainException('Unsupported parameter: ' . Utils::varInfo($param));
+            throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param));
         }
     }
 
     /**
      * @param mixed $value
      * @return Node\Expr
-     * @throws DomainException
+     * @throws Exception\DomainException
      */
     private function compileValue($value)
     {

@@ -1,10 +1,11 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
+use zdi\Definition;
 use zdi\Utils;
 
-abstract class AbstractDependency
+abstract class AbstractDefinition implements Definition
 {
     /**
      * @var string
@@ -22,7 +23,6 @@ abstract class AbstractDependency
     private $name;
 
     /**
-     * AbstractDependency constructor.
      * @param $class
      * @param boolean $factory
      * @param string|null $name

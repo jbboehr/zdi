@@ -1,10 +1,10 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
 use Closure;
 
-class ClosureDependency extends AbstractDependency
+class ClosureDefinition extends AbstractDefinition
 {
     /**
      * @var Closure
@@ -12,7 +12,6 @@ class ClosureDependency extends AbstractDependency
     private $closure;
 
     /**
-     * ClosureDependency constructor.
      * @param $class
      * @param bool $factory
      * @param null|string $name

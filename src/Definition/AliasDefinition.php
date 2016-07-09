@@ -1,8 +1,8 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
-class AliasDependency extends AbstractDependency
+class AliasDefinition extends AbstractDefinition
 {
     /**
      * @var string
@@ -10,7 +10,6 @@ class AliasDependency extends AbstractDependency
     private $alias;
 
     /**
-     * AliasDependency constructor.
      * @param $class
      * @param bool $alias
      */

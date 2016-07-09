@@ -1,6 +1,6 @@
 <?php
 
-namespace zdi\Compiler;
+namespace zdi\Compiler\DefinitionCompiler;
 
 use ReflectionFunction;
 
@@ -14,16 +14,14 @@ use PhpParser\ParserFactory;
 use SuperClosure\Analyzer\Visitor\ClosureLocatorVisitor;
 use SuperClosure\Exception\ClosureAnalysisException;
 
-use zdi\ContainerInterface;
-use zdi\Dependency\ClosureDependency;
+use zdi\Container;
+use zdi\Compiler\Visitor;
+use zdi\Compiler\DefinitionCompiler;
+use zdi\Definition;
+use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
 
-/**
- * Class ClosureDependencyCompiler
- * @package zdi\Compiler
- * @todo translate magic constants
- */
-class ClosureDependencyCompiler implements DependencyCompilerInterface
+class ClosureDefinitionCompiler implements DefinitionCompiler
 {
     /**
      * @var BuilderFactory
@@ -31,19 +29,18 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
     private $builderFactory;
 
     /**
-     * @var ClosureDependency
+     * @var ClosureDefinition
      */
-    private $dependency;
+    private $definition;
 
     /**
-     * ClosureDependencyCompiler constructor.
      * @param BuilderFactory $builderFactory
-     * @param ClosureDependency $dependency
+     * @param ClosureDefinition $definition
      */
-    public function __construct(BuilderFactory $builderFactory, ClosureDependency $dependency)
+    public function __construct(BuilderFactory $builderFactory, ClosureDefinition $definition)
     {
         $this->builderFactory = $builderFactory;
-        $this->dependency = $dependency;
+        $this->definition = $definition;
     }
 
     /**
@@ -51,24 +48,24 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
      */
     public function compile()
     {
-        $dependency = $this->dependency;
-        $identifier = $dependency->getIdentifier();
+        $definition = $this->definition;
+        $identifier = $definition->getIdentifier();
 
         // Prepare method
         $method = $this->builderFactory->method($identifier)
             ->makeProtected()
             ->setDocComment('/**
-                              * @return ' . $dependency->getTypeHint() . '
+                              * @return ' . $definition->getTypeHint() . '
                               */');
 
         // Prepare instance check
         $property = null;
-        if( !$dependency->isFactory() ) {
+        if( !$definition->isFactory() ) {
             // Add property to store instance
             $property = $this->builderFactory->property($identifier)
                 ->makePrivate()
                 ->setDocComment('/**
-                               * @var ' . $dependency->getTypeHint() . '
+                               * @var ' . $definition->getTypeHint() . '
                                */');
 
             // Add instance check
@@ -80,7 +77,7 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
         }
 
         // Translate closure
-        $ast = $this->locateClosure(new ReflectionFunction($dependency->getClosure()));
+        $ast = $this->locateClosure(new ReflectionFunction($definition->getClosure()));
         $paramName = $this->getContainerParamName($ast);
         $stmts = $ast->getStmts();
         $stmts = $this->translateContainer($stmts, $paramName);
@@ -122,11 +119,11 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
                 // @codeCoverageIgnoreEnd
             }
             $paramClass = $type->toString();
-            $interfaceClass = ContainerInterface::class;
+            $interfaceClass = Container::class;
             if( $paramClass !== $interfaceClass && !is_subclass_of('\\' . $paramClass, $interfaceClass) ) {
                 // @codeCoverageIgnoreStart
                 // Note: This should be handled by the container builder
-                throw new Exception\DomainException("Closure parameter must be zdi\\ContainerInterface or a subclass");
+                throw new Exception\DomainException("Closure parameter must be zdi\\Container or a subclass");
                 // @codeCoverageIgnoreEnd
             }
         }
@@ -153,11 +150,11 @@ class ClosureDependencyCompiler implements DependencyCompilerInterface
     private function translateReturnStatements(array $stmts)
     {
         // Ignore factories
-        if( $this->dependency->isFactory() ) {
+        if( $this->definition->isFactory() ) {
             return $stmts;
         }
 
-        $visitor = new Visitor\ReturnTranslatorVisitor($this->dependency->getIdentifier());
+        $visitor = new Visitor\ReturnTranslatorVisitor($this->definition->getIdentifier());
         $fileTraverser = new NodeTraverser;
         $fileTraverser->addVisitor($visitor);
         return $fileTraverser->traverse($stmts);

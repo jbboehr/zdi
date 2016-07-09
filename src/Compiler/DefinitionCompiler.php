@@ -4,7 +4,7 @@ namespace zdi\Compiler;
 
 use PhpParser\BuilderAbstract;
 
-interface DependencyCompilerInterface
+interface DefinitionCompiler
 {
     /**
      * @return BuilderAbstract[]

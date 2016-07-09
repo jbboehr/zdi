@@ -1,23 +1,22 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
-use zdi\Param\ParamInterface;
+use zdi\Param;
 
-class DefaultDependency extends AbstractDependency
+class DataDefinition extends AbstractDefinition
 {
     /**
-     * @var ParamInterface[]
+     * @var Param[]
      */
     private $params;
 
     /**
-     * @var ParamInterface[]
+     * @var Param[]
      */
     private $setters;
 
     /**
-     * Dependency constructor.
      * @param $class
      * @param bool $factory
      * @param string $name
@@ -32,7 +31,7 @@ class DefaultDependency extends AbstractDependency
     }
 
     /**
-     * @return ParamInterface[]
+     * @return Param[]
      */
     public function getParams()
     {
@@ -40,7 +39,7 @@ class DefaultDependency extends AbstractDependency
     }
 
     /**
-     * @return ParamInterface[]
+     * @return Param[]
      */
     public function getSetters()
     {

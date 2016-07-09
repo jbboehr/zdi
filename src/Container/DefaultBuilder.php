@@ -11,7 +11,7 @@ class DefaultBuilder extends Builder
      */
     public function build()
     {
-        return new Container(array(), $this->getDependencies());
+        return new Container\RuntimeContainer(array(), $this->getDefinitions());
     }
 
     public function isReady()

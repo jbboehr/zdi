@@ -2,7 +2,9 @@
 
 namespace zdi\Param;
 
-class NamedParam implements ParamInterface
+use zdi\Param;
+
+class NamedParam implements Param
 {
     /**
      * @var string

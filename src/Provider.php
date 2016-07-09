@@ -2,7 +2,7 @@
 
 namespace zdi;
 
-interface ProviderInterface
+interface Provider
 {
     /**
      * @return mixed

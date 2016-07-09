@@ -1,16 +1,18 @@
 <?php
 
-namespace zdi\Compiler;
+namespace zdi\Compiler\DefinitionCompiler;
 
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
-use zdi\ContainerInterface;
-use zdi\Dependency\ProviderDependency;
+use zdi\Container;
+use zdi\Compiler\DefinitionCompiler;
+use zdi\Definition;
+use zdi\Definition\ClassDefinition;
 use zdi\Exception;
 use zdi\Utils;
 
-class ProviderDependencyCompiler implements DependencyCompilerInterface
+class ClassDefinitionCompiler implements DefinitionCompiler
 {
     /**
      * @var BuilderFactory
@@ -18,41 +20,40 @@ class ProviderDependencyCompiler implements DependencyCompilerInterface
     private $builderFactory;
 
     /**
-     * @var ProviderDependency
+     * @var ClassDefinition
      */
-    private $dependency;
+    private $definition;
 
     /**
-     * ClosureDependencyCompiler constructor.
      * @param BuilderFactory $builderFactory
-     * @param ProviderDependency $dependency
+     * @param ClassDefinition $definition
      */
-    public function __construct(BuilderFactory $builderFactory, ProviderDependency $dependency)
+    public function __construct(BuilderFactory $builderFactory, ClassDefinition $definition)
     {
         $this->builderFactory = $builderFactory;
-        $this->dependency = $dependency;
+        $this->definition = $definition;
     }
 
     public function compile()
     {
-        $dependency = $this->dependency;
-        $identifier = $dependency->getIdentifier();
+        $definition = $this->definition;
+        $identifier = $definition->getIdentifier();
 
         // Prepare method
         $method = $this->builderFactory->method($identifier)
             ->makeProtected()
             ->setDocComment('/**
-                              * @return ' . $dependency->getTypeHint() . '
+                              * @return ' . $definition->getTypeHint() . '
                               */');
 
         // Prepare instance check
         $property = $prop = null;
-        if( !$dependency->isFactory() ) {
+        if( !$definition->isFactory() ) {
             // Add property to store instance
             $property = $this->builderFactory->property($identifier)
                 ->makePrivate()
                 ->setDocComment('/**
-                               * @var ' . $dependency->getTypeHint() . '
+                               * @var ' . $definition->getTypeHint() . '
                                */');
 
             // Add instance check
@@ -64,7 +65,7 @@ class ProviderDependencyCompiler implements DependencyCompilerInterface
         }
 
         // Prepare method body
-        $providerIdentifier = Utils::classToIdentifier($dependency->getProvider());
+        $providerIdentifier = Utils::classToIdentifier($definition->getProvider());
         $fetch = new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $providerIdentifier), 'get');
 
         if( $prop ) {

@@ -3,11 +3,8 @@
 namespace zdi\Container;
 
 use zdi\Container;
-use zdi\ContainerInterface;
-use zdi\Dependency\AliasDependency;
-use zdi\Dependency\Builder as DependencyBuilder;
-use zdi\Dependency\AbstractDependency;
-use zdi\Dependency\ClosureDependency;
+use zdi\Definition;
+use zdi\Definition\DefinitionBuilder;
 
 abstract class Builder
 {
@@ -17,9 +14,9 @@ abstract class Builder
     private $blacklist = array();
 
     /**
-     * @var AbstractDependency[]
+     * @var Definition[]
      */
-    private $dependencies = array();
+    private $definitions = array();
 
     /**
      * Builder constructor.
@@ -27,19 +24,19 @@ abstract class Builder
     public function __construct()
     {
         // Add a default alias for the container interface
-        $closure = static function(ContainerInterface $container) {
+        $closure = static function(Container $container) {
             return $container;
         };
-        $this->add(new ClosureDependency(ContainerInterface::class, true, null, $closure));
+        $this->add(new Definition\ClosureDefinition(Container::class, true, null, $closure));
     }
 
     /**
-     * @param AbstractDependency $dependency
+     * @param Definition definition
      * @return $this
      */
-    public function add(AbstractDependency $dependency)
+    public function add(Definition $definition)
     {
-        $this->dependencies[$dependency->getKey()] = $dependency;
+        $this->definitions[$definition->getKey()] = $definition;
         return $this;
     }
 
@@ -50,7 +47,7 @@ abstract class Builder
      */
     public function alias($interface, $class)
     {
-        $this->add(new AliasDependency($interface, $class));
+        $this->add(new Definition\AliasDefinition($interface, $class));
         return $this;
     }
 
@@ -66,19 +63,19 @@ abstract class Builder
 
     /**
      * @param string|null $class
-     * @return DependencyBuilder
+     * @return DefinitionBuilder
      */
     public function define($class = null)
     {
-        return new DependencyBuilder($this, $class);
+        return new DefinitionBuilder($this, $class);
     }
 
     /**
-     * @return AbstractDependency[]
+     * @return Definition[]
      */
-    public function getDependencies()
+    public function getDefinitions()
     {
-        return $this->dependencies;
+        return $this->definitions;
     }
 
     /**
@@ -121,7 +118,7 @@ abstract class Builder
                 continue;
             } else if( isset($this->blacklist[$class]) ) {
                 continue;
-            } else if( isset($this->dependencies[$class]) ) {
+            } else if( isset($this->definitions[$class]) ) {
                 continue;
             }
             try {
@@ -147,7 +144,7 @@ abstract class Builder
     }
 
     /**
-     * @return ContainerInterface
+     * @return Container
      */
     abstract public function build();
 

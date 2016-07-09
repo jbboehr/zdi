@@ -2,10 +2,10 @@
 
 namespace zdi\Tests;
 
+use zdi\Container;
 use zdi\Container\Builder;
 use zdi\Container\DefaultBuilder;
 use zdi\Container\CompileBuilder;
-use zdi\ContainerInterface;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
 use zdi\Param\NamedParam;
@@ -300,11 +300,11 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
-    public function testInvalidDependency(Builder $builder)
+    public function testInvalidDefinition(Builder $builder)
     {
         $this->setExpectedException(DomainException::class);
-        $dependency = new Fixture\InvalidDependency(NoArguments::class);
-        $builder->add($dependency);
+        $definition = new Fixture\InvalidDefinition(NoArguments::class);
+        $builder->add($definition);
         // Note: different builders throw at different times here
         $container = $builder->build();
         $container->get(Fixture\NoArguments::class);
@@ -393,7 +393,7 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
         $builder->define(NoArguments::class)
             ->build();
         $builder->define(Fixture\OneObjectArgument::class)
-            ->using(static function(ContainerInterface $container) {
+            ->using(static function(Container $container) {
                 return new Fixture\OneObjectArgument($container->get(NoArguments::class));
             })
             ->build();
@@ -426,7 +426,7 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('zdi\\Exception\\DomainException');
         $builder->define(Fixture\OneObjectArgument::class)
-            ->using(static function(ContainerInterface $container, $somethingElse) {
+            ->using(static function(Container $container, $somethingElse) {
                 return new Fixture\NoArguments();
             })
             ->build();
@@ -529,7 +529,7 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
-    public function testNamedDependency(Builder $builder)
+    public function testNamedDefinition(Builder $builder)
     {
         $builder->define(Fixture\NoArguments::class)
             ->name('noArgs')
@@ -550,7 +550,7 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
-    public function testScalarDependency(Builder $builder)
+    public function testScalarDefinition(Builder $builder)
     {
         $builder->define()
             ->name('someKey')
@@ -567,11 +567,11 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
-    public function testScalarDependencyFromContainer(Builder $builder)
+    public function testScalarDefinitionFromContainer(Builder $builder)
     {
         $builder->define()
             ->name('someKey')
-            ->using(static function (ContainerInterface $container) {
+            ->using(static function (Container $container) {
                 return $container->get('someOtherKey');
             })
             ->build();
@@ -593,14 +593,14 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(Fixture\DefaultValueArgument::DEFAULT_VALUE, $container->get(Fixture\DefaultValueArgument::class)->getString());
     }
 
-    private function defaultAssertions(ContainerInterface $container, $class, $key = null)
+    private function defaultAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;
         $this->assertInstanceOf($class, $container->get($containerKey));
         $this->assertSame($container->get($containerKey), $container->get($containerKey));
     }
 
-    private function defaultFactoryAssertions(ContainerInterface $container, $class, $key = null)
+    private function defaultFactoryAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;
         $this->assertInstanceOf($class, $container->get($containerKey));

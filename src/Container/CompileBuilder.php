@@ -41,7 +41,7 @@ class CompileBuilder extends Builder
     public function build()
     {
         if( !$this->isValid() ) {
-            $compiler = new Compiler($this->getDependencies(), $this->namespace, $this->class);
+            $compiler = new Compiler($this->getDefinitions(), $this->namespace, $this->class);
             $code = $compiler->compile();
             file_put_contents($this->file, $code);
         }
@@ -77,8 +77,8 @@ class CompileBuilder extends Builder
         clearstatcache(false, $this->file);
         $mtime = filemtime($this->file);
 
-        foreach( $this->getDependencies() as $dependency ) {
-            $class = $dependency->getClass();
+        foreach( $this->getDefinitions() as $definition ) {
+            $class = $definition->getClass();
             if( !class_exists($class, true) ) {
                 continue;
             }

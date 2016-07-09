@@ -1,8 +1,11 @@
 <?php
 
-namespace zdi;
+namespace zdi\Container;
 
-abstract class CompiledContainer implements ContainerInterface
+use zdi\Container;
+use zdi\Exception;
+
+abstract class CompiledContainer implements Container
 {
     private $values;
 

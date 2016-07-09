@@ -2,13 +2,13 @@
 
 namespace zdi\Tests\Fixture;
 
-use zdi\ContainerInterface;
+use zdi\Container;
 
 class ContainerArgument
 {
     private $container;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(Container $container)
     {
         $this->container = $container;
     }

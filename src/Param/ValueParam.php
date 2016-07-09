@@ -2,7 +2,9 @@
 
 namespace zdi\Param;
 
-class ValueParam implements ParamInterface
+use zdi\Param;
+
+class ValueParam implements Param
 {
     /**
      * @var mixed

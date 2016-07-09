@@ -1,8 +1,8 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
-class ProviderDependency extends AbstractDependency
+class ClassDefinition extends AbstractDefinition
 {
     /**
      * @var string
@@ -10,7 +10,6 @@ class ProviderDependency extends AbstractDependency
     private $provider;
 
     /**
-     * ProviderDependency constructor.
      * @param $class
      * @param bool $factory
      * @param null|string $name

@@ -2,14 +2,17 @@
 
 namespace zdi\Param;
 
+use zdi\Param;
 use zdi\Utils;
 
-class ClassParam extends AbstractParam
+class ClassParam implements Param
 {
     /**
      * @var string
      */
     private $class;
+
+    private $isOptional = false;
 
     /**
      * ClassParam constructor.
@@ -19,7 +22,7 @@ class ClassParam extends AbstractParam
     public function __construct($class, $isOptional = false)
     {
         $this->class = $class;
-        parent::__construct($isOptional);
+        $this->isOptional = $isOptional;
     }
 
     /**
@@ -36,5 +39,10 @@ class ClassParam extends AbstractParam
     public function getIdentifier()
     {
         return Utils::classToIdentifier($this->class);
+    }
+
+    public function isOptional()
+    {
+        return $this->isOptional;
     }
 }

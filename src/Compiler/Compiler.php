@@ -8,14 +8,9 @@ use PhpParser\Node;
 use PhpParser\PrettyPrinter;
 
 use zdi\Container;
-use zdi\Dependency\AliasDependency;
-use zdi\Dependency\ProviderDependency;
+use zdi\Definition;
 use zdi\Exception;
 use zdi\Utils;
-
-use zdi\Dependency\AbstractDependency;
-use zdi\Dependency\ClosureDependency;
-use zdi\Dependency\DefaultDependency;
 
 class Compiler
 {
@@ -40,20 +35,20 @@ class Compiler
     private $uniques;
 
     /**
-     * @var AbstractDependency[]
+     * @var Definition[]
      */
-    private $dependencies;
+    private $definitions;
 
     /**
      * Compiler constructor.
-     * @param AbstractDependency[] $dependencies
+     * @param Definition[] $definitions
      * @param string $class
      * @param string $namespace
      * @param BuilderFactory|null $builderFactory
      */
-    public function __construct(array $dependencies, $namespace, $class, BuilderFactory $builderFactory = null)
+    public function __construct(array $definitions, $namespace, $class, BuilderFactory $builderFactory = null)
     {
-        $this->dependencies = $dependencies;
+        $this->definitions = $definitions;
         $this->namespace = $namespace;
         $this->class = $class;
 
@@ -71,8 +66,8 @@ class Compiler
     {
         $class = $this->compileClass();
         $node = $this->builderFactory->namespace($this->namespace)
-            ->addStmt($this->builderFactory->use('zdi\\ContainerInterface'))
-            ->addStmt($this->builderFactory->use('zdi\\CompiledContainer'))
+            ->addStmt($this->builderFactory->use('zdi\\Container'))
+            ->addStmt($this->builderFactory->use('zdi\\Container\CompiledContainer'))
             ->addStmt($class)
             ->getNode();
         $prettyPrinter = new PrettyPrinter\Standard();
@@ -85,19 +80,19 @@ class Compiler
      */
     private function compileClass()
     {
-        $dependencies = $this->dependencies;
+        $definitions = $this->definitions;
 
         $class = $this->builderFactory->class($this->class)
             ->extend('CompiledContainer');
 
         $mapNodes = array();
 
-        foreach( $dependencies as $dependency ) {
-            if( $dependency instanceof AliasDependency ) {
-                $key = $dependency->getClass();
-                $alias = $dependency->getAlias();
-                $keyIdentifier = Utils::classToIdentifier($dependency->getClass());
-                $aliasIdentifier = Utils::classToIdentifier($dependency->getAlias());
+        foreach( $definitions as $definition ) {
+            if( $definition instanceof Definition\AliasDefinition ) {
+                $key = $definition->getClass();
+                $alias = $definition->getAlias();
+                $keyIdentifier = Utils::classToIdentifier($definition->getClass());
+                $aliasIdentifier = Utils::classToIdentifier($definition->getAlias());
                 $mapNodes[] = new Node\Expr\ArrayItem(
                     new Node\Scalar\String_(Utils::classToIdentifier($alias)),
                     new Node\Scalar\String_($keyIdentifier)
@@ -106,7 +101,7 @@ class Compiler
                     new Node\Scalar\String_($keyIdentifier),
                     new Node\Scalar\String_($key)
                 );
-                if( isset($dependencies[$alias]) ) {
+                if( isset($definitions[$alias]) ) {
                     if( !isset($this->uniques[strtolower($keyIdentifier)]) ) {
                         $method = $this->builderFactory->method($keyIdentifier)
                             ->makeProtected();
@@ -115,15 +110,15 @@ class Compiler
                     }
                 }
             } else {
-                $identifier = $dependency->getIdentifier();
+                $identifier = $definition->getIdentifier();
 
                 // Add method
-                $class->addStmts($this->compileDependency($dependency));
+                $class->addStmts($this->compileDefinition($definition));
 
                 // Add map entry
                 $mapNodes[] = new Node\Expr\ArrayItem(
                     new Node\Scalar\String_($identifier),
-                    new Node\Scalar\String_($this->resolveUniqueIdentifier($dependency->getKey()))
+                    new Node\Scalar\String_($this->resolveUniqueIdentifier($definition->getKey()))
                 );
 
                 $this->uniques[strtolower($identifier)] = $identifier;
@@ -144,30 +139,30 @@ class Compiler
     }
 
     /**
-     * @param AbstractDependency $dependency
+     * @param Definition $definition
      * @return \PhpParser\BuilderAbstract[]
      * @throws Exception\DomainException
      */
-    private function compileDependency(AbstractDependency $dependency)
+    private function compileDefinition(Definition $definition)
     {
-        return $this->makeDependencyCompiler($dependency)->compile();
+        return $this->makeDefinitionCompiler($definition)->compile();
     }
 
     /**
-     * @param AbstractDependency $dependency
-     * @return DependencyCompilerInterface
+     * @param Definition $definition
+     * @return DefinitionCompiler
      * @throws Exception\DomainException
      */
-    private function makeDependencyCompiler(AbstractDependency $dependency)
+    private function makeDefinitionCompiler(Definition $definition)
     {
-        if( $dependency instanceof DefaultDependency ) {
-            return new DefaultDependencyCompiler($this->builderFactory, $dependency);
-        } else if( $dependency instanceof ClosureDependency ) {
-            return new ClosureDependencyCompiler($this->builderFactory, $dependency);
-        } else if( $dependency instanceof ProviderDependency ) {
-            return new ProviderDependencyCompiler($this->builderFactory, $dependency);
+        if( $definition instanceof Definition\DataDefinition ) {
+            return new DefinitionCompiler\DataDefinitionCompiler($this->builderFactory, $definition);
+        } else if( $definition instanceof Definition\ClosureDefinition ) {
+            return new DefinitionCompiler\ClosureDefinitionCompiler($this->builderFactory, $definition);
+        } else if( $definition instanceof Definition\ClassDefinition ) {
+            return new DefinitionCompiler\ClassDefinitionCompiler($this->builderFactory, $definition);
         } else {
-            throw new Exception\DomainException('Unsupported dependency: ' . get_class($dependency));
+            throw new Exception\DomainException('Unsupported definition: ' . get_class($definition));
         }
     }
 

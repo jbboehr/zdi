@@ -1,6 +1,6 @@
 <?php
 
-namespace zdi\Tests\Dependency;
+namespace zdi\Tests\Definition;
 
 use zdi\Container\CompileBuilder;
 use zdi\Container\DefaultBuilder;
@@ -28,10 +28,10 @@ class BuilderTest extends \PHPUnit_Framework_TestCase
         // Generate the file
         $container = $builder->build();
 
-        // The builder should be 'valid' as the container file is newer than any dependencies
+        // The builder should be 'valid' as the container file is newer than any definitions
         $this->assertTrue($builder->isValid());
 
-        // touch the container to before a dependency, then it should be invalid
+        // touch the container to before a definition, then it should be invalid
         $r1 = new \ReflectionClass(Fixture\NoArguments::class);
         $r2 = new \ReflectionClass($container);
         $orig = filemtime($r2->getFileName());

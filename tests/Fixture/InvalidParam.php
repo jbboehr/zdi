@@ -2,9 +2,9 @@
 
 namespace zdi\Tests\Fixture;
 
-use zdi\Param\ParamInterface;
+use zdi\Param;
 
-class InvalidParam implements ParamInterface
+class InvalidParam implements Param
 {
 
 }

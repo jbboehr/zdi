@@ -2,9 +2,9 @@
 
 namespace zdi\Tests\Fixture;
 
-use zdi\ProviderInterface;
+use zdi\Provider;
 
-class OneObjectProvider implements ProviderInterface
+class OneObjectProvider implements Provider
 {
     private $object;
 

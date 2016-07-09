@@ -1,20 +1,18 @@
 <?php
 
-namespace zdi\Dependency;
+namespace zdi\Definition;
 
 use Closure;
 use ReflectionClass;
 use ReflectionMethod;
 
-use zdi\ContainerInterface;
+use zdi\Container;
 use zdi\Container\Builder as ContainerBuilder;
+use zdi\Definition;
 use zdi\Exception;
-use zdi\Param\ParamInterface;
-use zdi\Param\ClassParam;
-use zdi\Param\NamedParam;
-use zdi\Param\ValueParam;
+use zdi\Param;
 
-class Builder
+class DefinitionBuilder
 {
     /**
      * @var ContainerBuilder|null
@@ -98,7 +96,7 @@ class Builder
 
     /**
      * @param string $paramName
-     * @param string|ParamInterface $containerKey
+     * @param string|Param $containerKey
      * @return $this
      */
     public function param($paramName, $containerKey)
@@ -109,7 +107,7 @@ class Builder
 
     /**
      * @param $method
-     * @param string|ParamInterface|null $containerKey
+     * @param string|Param|null $containerKey
      * @return $this
      */
     public function setter($method, $containerKey = null)
@@ -139,40 +137,40 @@ class Builder
     }
 
     /**
-     * @return AbstractDependency
+     * @return Definition
      * @throws Exception\DomainException
      */
     public function build()
     {
         if( is_string($this->provider) ) {
-            $dependency = new ProviderDependency($this->class, $this->factory, $this->name, $this->provider);
+            $definition = new ClassDefinition($this->class, $this->factory, $this->name, $this->provider);
         } else if( $this->provider instanceof Closure ) {
             $closure = $this->provider;
             $this->validateClosure($closure);
-            $dependency = new ClosureDependency($this->class, $this->factory, $this->name, $closure);
+            $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
             $params = $this->convertParameters($reflectionClass->getConstructor());
             $setters = $this->convertSetters($reflectionClass);
-            $dependency = new DefaultDependency($this->class, $this->factory, $this->name, $params, $setters);
+            $definition = new DataDefinition($this->class, $this->factory, $this->name, $params, $setters);
         } else {
-            throw new Exception\DomainException('Unable to determine dependency type');
+            throw new Exception\DomainException('Unable to determine definition type');
         }
 
         // Add to container
         if( null !== $this->container ) {
-            $this->container->add($dependency);
+            $this->container->add($definition);
             if( $this->alias ) {
                 $this->container->alias($this->alias, $this->class);
             }
         }
 
-        return $dependency;
+        return $definition;
     }
 
     /**
      * @param ReflectionMethod|null $reflectionMethod
-     * @return ParamInterface[]
+     * @return Param[]
      * @throws Exception\DomainException
      */
     private function convertParameters(ReflectionMethod $reflectionMethod = null)
@@ -190,9 +188,9 @@ class Builder
             } else if( isset($this->params[$position]) ) {
                 $result[$position] = $this->convertParam($this->params[$position], $parameter->isOptional());
             } else if( $class ) {
-                $result[$position] = new ClassParam($class->name, $parameter->isOptional());
+                $result[$position] = new Param\ClassParam($class->name, $parameter->isOptional());
             } else if( $parameter->isDefaultValueAvailable() ) {
-                $result[$position] = new ValueParam($parameter->getDefaultValue());
+                $result[$position] = new Param\ValueParam($parameter->getDefaultValue());
             } else {
                 throw new Exception\DomainException(
                     'Unresolved parameter: "' . $name . '" for ' . $this->class ?: $this->name
@@ -210,8 +208,8 @@ class Builder
     private function convertParam($param, $isOptional = false)
     {
         if( is_string($param) ) {
-            return new NamedParam($param);
-        } else if( $param instanceof ParamInterface ) {
+            return new Param\NamedParam($param);
+        } else if( $param instanceof Param ) {
             return $param;
         } else {
             throw new Exception\DomainException("Invalid param");
@@ -220,7 +218,7 @@ class Builder
 
     /**
      * @param ReflectionClass $reflectionClass
-     * @return ParamInterface[]
+     * @return Param[]
      * @throws Exception\DomainException
      */
     private function convertSetters(ReflectionClass $reflectionClass)
@@ -236,7 +234,7 @@ class Builder
     /**
      * @param ReflectionMethod $reflectionMethod
      * @param $param
-     * @return ParamInterface[]
+     * @return Param[]
      * @throws Exception\DomainException
      */
     private function convertSetter(ReflectionMethod $reflectionMethod, $param)
@@ -247,7 +245,7 @@ class Builder
         if( $param !== null ) {
             return $this->convertParam($param);
         } else if( $class !== null ) {
-            return new ClassParam($class->name);
+            return new Param\ClassParam($class->name);
         } else {
             throw new Exception\DomainException('Unknown setter value');
         }
@@ -269,10 +267,10 @@ class Builder
         $parameters = $reflectionFunction->getParameters();
         $parameter = $parameters[0];
         if( ($class = $parameter->getClass()) ) {
-            $interfaceClass = ContainerInterface::class;
+            $interfaceClass = Container::class;
             $paramClass = $class->getName();
             if( $paramClass !== $interfaceClass && !is_subclass_of('\\' . $paramClass, $interfaceClass) ) {
-                throw new Exception\DomainException('Closure parameter must be zdi\ContainerInterface or a subclass');
+                throw new Exception\DomainException('Closure parameter must be zdi\Container or a subclass');
             }
         } else {
             throw new Exception\DomainException('Closure provider parameter must have a typehint');
