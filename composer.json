@@ -9,6 +9,7 @@
             "zdi\\Tests\\": "tests"
         }
     },
+    "license": "BSD-2-Clause",
     "name": "jbboehr/zdi",
     "require": {
         "jeremeamia/superclosure": "~2.2.0",
