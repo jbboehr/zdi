@@ -15,7 +15,8 @@
         "nikic/php-parser": "~2.1.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.5.0"
+        "phpunit/phpunit": "~4.5.0",
+        "satooshi/php-coveralls": "~1.0.0"
     },
     "suggest": {
         "php": ">=5.5.0"
