@@ -3,7 +3,6 @@
 namespace zdi;
 
 use Closure;
-use Exception;
 
 use zdi\Dependency\AliasDependency;
 use zdi\Dependency\AbstractDependency;
@@ -52,13 +51,12 @@ class Container implements ContainerInterface
         // Create the dependency if not available
         if( isset($this->dependencies[$key]) ) {
             $dependency = $this->dependencies[$key];
-        } else if( is_a($this, $key) ) {
-            return $this;
-        } else if( class_exists($key, true) ) {
-            $builder = new Dependency\Builder(null, $key);
-            $dependency = $builder->build();
+// @todo re-enable this
+//        } else if( class_exists($key, true) ) {
+//            $builder = new Dependency\Builder(null, $key);
+//            $dependency = $builder->build();
         } else {
-            throw new Exception("Not defined");
+            throw new Exception\OutOfBoundsException("Undefined identifier: " . $key);
         }
 
         // Build the parameters
@@ -71,7 +69,7 @@ class Container implements ContainerInterface
         } else if( $dependency instanceof AliasDependency ) {
             return $this->get($dependency->getAlias());
         } else {
-            throw new Exception('unknown dependency type');
+            throw new Exception\DomainException('Unsupported dependency: ' . Utils::varInfo($dependency));
         }
 
         if( !$dependency->isFactory() ) {
@@ -86,8 +84,7 @@ class Container implements ContainerInterface
      */
     public function has($key)
     {
-        return isset($this->values[$key])
-            || isset($this->dependencies[$key]);
+        return isset($this->values[$key]) || isset($this->dependencies[$key]);
     }
 
     /**
@@ -111,11 +108,7 @@ class Container implements ContainerInterface
      */
     public function offsetSet($offset, $value)
     {
-        if( $value instanceof AbstractDependency ) {
-            $this->dependencies[$offset] = $value;
-        } else {
-            $this->values[$offset] = $value;
-        }
+        $this->values[$offset] = $value;
     }
 
     /**
@@ -165,11 +158,16 @@ class Container implements ContainerInterface
         if( $param instanceof NamedParam ) {
             return $this->get($param->getName());
         } else if( $param instanceof ClassParam ) {
-            return $this->get($param->getClass());
+            if( $param->isOptional() && !$this->has($param->getClass()) ) {
+                return null;
+            } else {
+                return $this->get($param->getClass());
+            }
         } else if( $param instanceof ValueParam ) {
             return $param->getValue();
         } else {
-            throw new Exception("Invalid param");
+            throw new Exception\DomainException("Unsupported param: " . Utils::varInfo($param));
         }
     }
+
 }

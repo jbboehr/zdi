@@ -12,6 +12,7 @@ class PrecompiledBuilder extends Builder
 
     public function __construct($file, $namespace, $class)
     {
+        parent::__construct();
         $this->file = $file;
         $this->namespace = $namespace;
         $this->class = $class;

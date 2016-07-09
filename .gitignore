@@ -1,3 +1,5 @@
 .idea
 composer.phar
+/reports/
+/tests/tmp/
 /vendor/

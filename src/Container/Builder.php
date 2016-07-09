@@ -7,6 +7,7 @@ use zdi\ContainerInterface;
 use zdi\Dependency\AliasDependency;
 use zdi\Dependency\Builder as DependencyBuilder;
 use zdi\Dependency\AbstractDependency;
+use zdi\Dependency\ClosureDependency;
 
 abstract class Builder
 {
@@ -19,6 +20,18 @@ abstract class Builder
      * @var AbstractDependency[]
      */
     private $dependencies = array();
+
+    /**
+     * Builder constructor.
+     */
+    public function __construct()
+    {
+        // Add a default alias for the container interface
+        $closure = static function(ContainerInterface $container) {
+            return $container;
+        };
+        $this->add(new ClosureDependency(ContainerInterface::class, true, null, $closure));
+    }
 
     /**
      * @param AbstractDependency $dependency

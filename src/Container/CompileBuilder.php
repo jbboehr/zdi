@@ -14,17 +14,27 @@ class CompileBuilder extends Builder
 
     private $ttl;
 
+    private $stat;
+
     public function __construct($file, $namespace, $class)
     {
+        parent::__construct();
         $this->file = $file;
         $this->namespace = $namespace;
         $this->class = $class;
         $this->ttl = 0;
+        $this->stat = false;
     }
 
     public function ttl($ttl)
     {
         $this->ttl = $ttl;
+        return $this;
+    }
+
+    public function stat($stat = true)
+    {
+        $this->stat = $stat;
         return $this;
     }
 
@@ -48,19 +58,23 @@ class CompileBuilder extends Builder
             return false;
         } else if( !file_exists($this->file) ) {
             return false;
-        } else if( filemtime($this->file) + $this->ttl < time() ) {
-            return false;
         } else {
-            return true;
+            clearstatcache(false, $this->file);
+            return filemtime($this->file) + $this->ttl > time();
         }
     }
 
-    private function isValid()
+    public function isValid()
     {
+        if( !$this->stat ) {
+            return false;
+        }
+
         if( !file_exists($this->file) ) {
             return false;
         }
 
+        clearstatcache(false, $this->file);
         $mtime = filemtime($this->file);
 
         foreach( $this->getDependencies() as $dependency ) {

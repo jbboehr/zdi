@@ -3,12 +3,12 @@
 namespace zdi\Dependency;
 
 use Closure;
-use Exception;
 use ReflectionClass;
 use ReflectionMethod;
 
+use zdi\ContainerInterface;
 use zdi\Container\Builder as ContainerBuilder;
-
+use zdi\Exception;
 use zdi\Param\ParamInterface;
 use zdi\Param\ClassParam;
 use zdi\Param\NamedParam;
@@ -140,21 +140,23 @@ class Builder
 
     /**
      * @return AbstractDependency
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     public function build()
     {
         if( is_string($this->provider) ) {
             $dependency = new ProviderDependency($this->class, $this->factory, $this->name, $this->provider);
         } else if( $this->provider instanceof Closure ) {
-            $dependency = new ClosureDependency($this->class, $this->factory, $this->name, $this->provider);
+            $closure = $this->provider;
+            $this->validateClosure($closure);
+            $dependency = new ClosureDependency($this->class, $this->factory, $this->name, $closure);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
             $params = $this->convertParameters($reflectionClass->getConstructor());
             $setters = $this->convertSetters($reflectionClass);
             $dependency = new DefaultDependency($this->class, $this->factory, $this->name, $params, $setters);
         } else {
-            throw new Exception('Unable to determine dependency type');
+            throw new Exception\DomainException('Unable to determine dependency type');
         }
 
         // Add to container
@@ -171,7 +173,7 @@ class Builder
     /**
      * @param ReflectionMethod|null $reflectionMethod
      * @return ParamInterface[]
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function convertParameters(ReflectionMethod $reflectionMethod = null)
     {
@@ -184,15 +186,17 @@ class Builder
             $name = $parameter->getName();
             $class = $parameter->getClass();
             if( isset($this->params[$name]) ) {
-                $result[$position] = $this->convertParam($this->params[$name]);
+                $result[$position] = $this->convertParam($this->params[$name], $parameter->isOptional());
             } else if( isset($this->params[$position]) ) {
-                $result[$position] = $this->convertParam($this->params[$position]);
+                $result[$position] = $this->convertParam($this->params[$position], $parameter->isOptional());
             } else if( $class ) {
-                $result[$position] = new ClassParam($class->name);
+                $result[$position] = new ClassParam($class->name, $parameter->isOptional());
             } else if( $parameter->isDefaultValueAvailable() ) {
                 $result[$position] = new ValueParam($parameter->getDefaultValue());
             } else {
-                throw new Exception('Unresolved paramter: ' . $name . ' for ' . $this->class ?: $this->name);
+                throw new Exception\DomainException(
+                    'Unresolved parameter: "' . $name . '" for ' . $this->class ?: $this->name
+                );
             }
         }
         return $result;
@@ -201,25 +205,23 @@ class Builder
     /**
      * @param $param
      * @return ParamInterface
-     * @throws Exception
+     * @throws Exception\DomainException
      */
-    private function convertParam($param)
+    private function convertParam($param, $isOptional = false)
     {
         if( is_string($param) ) {
             return new NamedParam($param);
         } else if( $param instanceof ParamInterface ) {
             return $param;
-        } else if( $param instanceof ReflectionClass ) {
-            return new ClassParam($param->name);
         } else {
-            throw new Exception("Invalid param");
+            throw new Exception\DomainException("Invalid param");
         }
     }
 
     /**
      * @param ReflectionClass $reflectionClass
      * @return ParamInterface[]
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function convertSetters(ReflectionClass $reflectionClass)
     {
@@ -235,7 +237,7 @@ class Builder
      * @param ReflectionMethod $reflectionMethod
      * @param $param
      * @return ParamInterface[]
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function convertSetter(ReflectionMethod $reflectionMethod, $param)
     {
@@ -247,7 +249,33 @@ class Builder
         } else if( $class !== null ) {
             return new ClassParam($class->name);
         } else {
-            throw new Exception('Unknown setter value');
+            throw new Exception\DomainException('Unknown setter value');
+        }
+    }
+
+    /**
+     * @param Closure $closure
+     * @throws Exception\DomainException
+     */
+    private function validateClosure(Closure $closure)
+    {
+        $reflectionFunction = new \ReflectionFunction($closure);
+        $nParams = $reflectionFunction->getNumberOfParameters();
+        if( $nParams === 0 ) {
+            return;
+        } else if( $nParams !== 1 ) {
+            throw new Exception\DomainException('Closure must have only one or zero parameters');
+        }
+        $parameters = $reflectionFunction->getParameters();
+        $parameter = $parameters[0];
+        if( ($class = $parameter->getClass()) ) {
+            $interfaceClass = ContainerInterface::class;
+            $paramClass = $class->getName();
+            if( $paramClass !== $interfaceClass && !is_subclass_of('\\' . $paramClass, $interfaceClass) ) {
+                throw new Exception\DomainException('Closure parameter must be zdi\ContainerInterface or a subclass');
+            }
+        } else {
+            throw new Exception\DomainException('Closure provider parameter must have a typehint');
         }
     }
 }

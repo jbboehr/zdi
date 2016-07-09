@@ -2,8 +2,6 @@
 
 namespace zdi;
 
-use Exception;
-
 abstract class CompiledContainer implements ContainerInterface
 {
     private $values;
@@ -20,7 +18,7 @@ abstract class CompiledContainer implements ContainerInterface
         } else if( isset($this->values[$key]) ) {
             return $this->values[$key];
         } else {
-            throw new Exception("Undefined identifier: " . $key);
+            throw new Exception\OutOfBoundsException("Undefined identifier: " . $key);
         }
     }
 
@@ -63,4 +61,11 @@ abstract class CompiledContainer implements ContainerInterface
     {
         unset($this->values[$offset]);
     }
+
+    /*
+    public function __call($method, $arguments)
+    {
+        throw new Exception('Undefined identifier: ' . $method);
+    }
+    */
 }

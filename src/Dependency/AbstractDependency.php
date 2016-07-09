@@ -63,11 +63,9 @@ abstract class AbstractDependency
      */
     public function getKey()
     {
-        if( $this->name ) {
-            return $this->name;
-        } else /*if( $this->class )*/ {
-            return $this->class;
-        }
+        $name = $this->getName();
+        $class = $this->getClass();
+        return $name ?: $class;
     }
 
     /**
@@ -75,10 +73,12 @@ abstract class AbstractDependency
      */
     public function getIdentifier()
     {
-        if( $this->name ) {
-            return Utils::classToIdentifier($this->name);
+        $name = $this->getName();
+        $class = $this->getClass();
+        if( $name ) {
+            return Utils::classToIdentifier($name);
         } else /*if( $this->class )*/ {
-            return Utils::classToIdentifier($this->class);
+            return Utils::classToIdentifier($class);
         }
     }
 
@@ -87,8 +87,9 @@ abstract class AbstractDependency
      */
     public function getTypeHint()
     {
-        if( $this->class ) {
-            return $this->class;
+        $class = $this->getClass();
+        if( $class ) {
+            return '\\' . $class;
         } else {
             return 'scalar';
         }

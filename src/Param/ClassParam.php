@@ -4,7 +4,7 @@ namespace zdi\Param;
 
 use zdi\Utils;
 
-class ClassParam implements ParamInterface
+class ClassParam extends AbstractParam
 {
     /**
      * @var string
@@ -14,10 +14,12 @@ class ClassParam implements ParamInterface
     /**
      * ClassParam constructor.
      * @param string $class
+     * @param boolean $isOptional
      */
-    public function __construct($class)
+    public function __construct($class, $isOptional = false)
     {
         $this->class = $class;
+        parent::__construct($isOptional);
     }
 
     /**

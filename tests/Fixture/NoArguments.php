@@ -2,7 +2,7 @@
 
 namespace zdi\Tests\Fixture;
 
-class OneObject
+class NoArguments
 {
-    
+
 }

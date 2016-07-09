@@ -2,8 +2,6 @@
 
 namespace zdi\Compiler;
 
-use Exception;
-
 use PhpParser\BuilderFactory;
 use PhpParser\Builder;
 use PhpParser\Node;
@@ -11,6 +9,8 @@ use PhpParser\PrettyPrinter;
 
 use zdi\Container;
 use zdi\Dependency\AliasDependency;
+use zdi\Dependency\ProviderDependency;
+use zdi\Exception;
 use zdi\Utils;
 
 use zdi\Dependency\AbstractDependency;
@@ -65,7 +65,7 @@ class Compiler
 
     /**
      * @return string
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     public function compile()
     {
@@ -81,7 +81,7 @@ class Compiler
 
     /**
      * @return Builder\Class_
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function compileClass()
     {
@@ -130,10 +130,15 @@ class Compiler
             }
         }
 
-        $class->addStmt($this->builderFactory->property('map')
-            ->makeProtected()
-            ->makeStatic()
-            ->setDefault(new Node\Expr\Array_($mapNodes)));
+        $class->addStmt(
+            $this->builderFactory->property('map')
+                ->makeProtected()
+                ->makeStatic()
+                ->setDefault(new Node\Expr\Array_($mapNodes))
+                ->setDocComment('/**
+                                  * @var array
+                                  */')
+        );
 
         return $class;
     }
@@ -141,7 +146,7 @@ class Compiler
     /**
      * @param AbstractDependency $dependency
      * @return \PhpParser\BuilderAbstract[]
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function compileDependency(AbstractDependency $dependency)
     {
@@ -151,7 +156,7 @@ class Compiler
     /**
      * @param AbstractDependency $dependency
      * @return DependencyCompilerInterface
-     * @throws Exception
+     * @throws Exception\DomainException
      */
     private function makeDependencyCompiler(AbstractDependency $dependency)
     {
@@ -159,8 +164,10 @@ class Compiler
             return new DefaultDependencyCompiler($this->builderFactory, $dependency);
         } else if( $dependency instanceof ClosureDependency ) {
             return new ClosureDependencyCompiler($this->builderFactory, $dependency);
+        } else if( $dependency instanceof ProviderDependency ) {
+            return new ProviderDependencyCompiler($this->builderFactory, $dependency);
         } else {
-            throw new Exception('Unsupported dependency type: ' . get_class($dependency));
+            throw new Exception\DomainException('Unsupported dependency: ' . get_class($dependency));
         }
     }
 
