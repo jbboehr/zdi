@@ -83,6 +83,17 @@ class RuntimeContainer implements Container
     /**
      * @inheritdoc
      */
+    public function keys()
+    {
+        return array_merge(
+            array_keys($this->values),
+            array_keys($this->definitions)
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function offsetExists($offset)
     {
         return $this->has($offset);

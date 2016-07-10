@@ -17,4 +17,9 @@ interface Container extends ArrayAccess
      * @return mixed
      */
     public function get($key);
+
+    /**
+     * @return string[]
+     */
+    public function keys();
 }

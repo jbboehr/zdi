@@ -12,11 +12,11 @@
     "license": "BSD-2-Clause",
     "name": "jbboehr/zdi",
     "require": {
-        "jeremeamia/superclosure": "~2.2.0",
-        "nikic/php-parser": "~2.1.0"
+        "jeremeamia/superclosure": "~2.2",
+        "nikic/php-parser": "~2.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.5.0",
+        "phpunit/phpunit": "~4.8.26",
         "satooshi/php-coveralls": "~1.0.0"
     },
     "suggest": {

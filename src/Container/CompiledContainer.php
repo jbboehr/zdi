@@ -36,6 +36,14 @@ abstract class CompiledContainer implements Container
     /**
      * @inheritdoc
      */
+    public function keys()
+    {
+        return array_keys(static::$map);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function offsetExists($offset)
     {
         return $this->has($offset);

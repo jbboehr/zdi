@@ -273,6 +273,11 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvalidParam(Builder $builder)
     {
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
         $this->setExpectedException(DomainException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->param(0, new Fixture\InvalidParam())
@@ -301,6 +306,11 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvalidDefinition(Builder $builder)
     {
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
         $this->setExpectedException(DomainException::class);
         $definition = new Fixture\InvalidDefinition(NoArguments::class);
         $builder->add($definition);
@@ -667,9 +677,13 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
             ->className('zdi\\Tests\\Gen\\' . $className)
             ;
 
+        $precompiledContainerBuilder = clone $compileContainerBuilder;
+        $precompiledContainerBuilder->precompiled(true);
+
         return array(
             array($defaultContainerBuilder),
             array($compileContainerBuilder),
+            array($precompiledContainerBuilder),
         );
     }
 }

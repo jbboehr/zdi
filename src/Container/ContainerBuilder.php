@@ -8,6 +8,11 @@ use zdi\Definition;
 use zdi\Definition\DefinitionBuilder;
 use zdi\Exception;
 
+/**
+ * Class ContainerBuilder
+ * @package zdi\Container
+ * @property-read boolean $precompiled
+ */
 class ContainerBuilder
 {
     /**
@@ -58,6 +63,15 @@ class ContainerBuilder
 //            ->factory(true)
 //            ->using($closure)
 //            ->build();
+    }
+
+    public function __get($name)
+    {
+        if( property_exists($this, $name) ) {
+            return $this->$name;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -246,10 +260,18 @@ class ContainerBuilder
         if( $this->needsRebuild() ) {
             $compiler = new Compiler($this->definitions, $this->className);
             $code = $compiler->compile();
-            file_put_contents($this->file, $code);
+
+            if( !file_put_contents($this->file, $code) ) {
+                throw new Exception\IOException('Failed to write ' . $this->file);
+            }
         }
 
-        require_once $this->file;
+        include_once $this->file;
+
+        if( !class_exists($this->className, false) ) {
+            throw new Exception\ClassNotFoundException('Class "' . $this->className . '" not found"');
+        }
+
         return new $this->className;
     }
 
