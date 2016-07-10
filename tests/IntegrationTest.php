@@ -361,6 +361,25 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
+    public function testClosureWithArgument(Builder $builder)
+    {
+        $builder->define(NoArguments::class)
+            ->build();
+        $builder->define(Fixture\OneObjectArgument::class)
+            ->using(static function(Fixture\NoArguments $obj) {
+                return new Fixture\OneObjectArgument($obj);
+            })
+            ->build();
+        $container = $builder->build();
+
+        $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
+        $this->assertInstanceOf(NoArguments::class, $container->get(Fixture\OneObjectArgument::class)->getObject());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
     public function testSimpleClosureInvalidTypeHint(Builder $builder)
     {
         $this->setExpectedException(DomainException::class);
@@ -406,16 +425,37 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
-    public function testInvalidClosureParameter(Builder $builder)
+    public function testClosureParameterWithoutTypeHint(Builder $builder)
     {
         $this->setExpectedException('zdi\\Exception\\DomainException');
         $builder->define(Fixture\OneObjectArgument::class)
-            ->using(static function(\Exception $container) {
+            ->using(static function($container) {
                 return new Fixture\NoArguments();
             })
             ->build();
-        $builder->build();
+        $container = $builder->build();
+        $container->get(Fixture\OneObjectArgument::class);
     }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    /*
+    public function testNestingClosuresFails(Builder $builder)
+    {
+        $this->setExpectedException('zdi\\Exception\\DomainException');
+        $builder->define(Fixture\OneObjectArgument::class)
+            ->using(static function() {
+                return call_user_func(function() {
+                    return new Fixture\NoArguments();
+                });
+            })
+            ->build();
+        $container = $builder->build();
+        $container->get(Fixture\OneObjectArgument::class);
+    }
+    */
 
     /**
      * @param Builder $builder

@@ -20,6 +20,7 @@ use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
 use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
+use zdi\Utils;
 
 class ClosureDefinitionCompiler implements DefinitionCompiler
 {
@@ -76,71 +77,49 @@ class ClosureDefinitionCompiler implements DefinitionCompiler
             ));
         }
 
+        $reflectionFunction = new ReflectionFunction($definition->getClosure());
+
         // Translate closure
-        $ast = $this->locateClosure(new ReflectionFunction($definition->getClosure()));
-        $paramName = $this->getContainerParamName($ast);
+        $ast = $this->locateClosure($reflectionFunction);
         $stmts = $ast->getStmts();
-        $stmts = $this->translateContainer($stmts, $paramName);
+        $stmts = $this->translateParameters($reflectionFunction, $stmts);
         $stmts = $this->translateReturnStatements($stmts);
         $method->addStmts($stmts);
 
         return $property ? array($property, $method) : array($method);
     }
 
-    /**
-     * @param Node\Expr\Closure $ast
-     * @return string|null
-     * @throws Exception\DomainException
-     */
-    private function getContainerParamName(Node\Expr\Closure $ast)
+    private function translateParameters(ReflectionFunction $reflectionFunction, $stmts)
     {
-        $params = $ast->getParams();
-        if( count($params) <= 0 ) {
-            return null;
-        } else if( count($params) > 1 ) {
-            // @codeCoverageIgnoreStart
-            // Note: This should be handled by the container builder
-            throw new Exception\DomainException("Closure must have only one or zero parameters");
-            // @codeCoverageIgnoreEnd
-        }
-        $param = $params[0];
-        $type = $param->type;
-
-        if( !$type ) {
-            // @codeCoverageIgnoreStart
-            // Note: This should be handled by the container builder
-            throw new Exception\DomainException('Closure provider parameter must have a typehint');
-            // @codeCoverageIgnoreEnd
-        } else {
-            if( !($type instanceof Node\Name\FullyQualified) ) {
+        $map = array();
+        $prepend = array();
+        foreach( $reflectionFunction->getParameters() as $parameter ) {
+            $class = $parameter->getClass();
+            if( !$class ) {
                 // @codeCoverageIgnoreStart
-                // Note: Not sure if reachable
-                throw new Exception\DomainException("Type must be a fully quality class name");
+                // Note: this should be covered by the definition builder
+                throw new Exception\DomainException('Closure parameter must have a type hint');
                 // @codeCoverageIgnoreEnd
             }
-            $paramClass = $type->toString();
-            $interfaceClass = Container::class;
-            if( $paramClass !== $interfaceClass && !is_subclass_of('\\' . $paramClass, $interfaceClass) ) {
-                // @codeCoverageIgnoreStart
-                // Note: This should be handled by the container builder
-                throw new Exception\DomainException("Closure parameter must be zdi\\Container or a subclass");
-                // @codeCoverageIgnoreEnd
+            $className = $parameter->getClass()->getName();
+            if( $className === Container::class ) {
+                $map[$parameter->getName()] = new Node\Expr\Variable('this');
+            } else {
+                $identifier = Utils::classToIdentifier($className);
+                $prepend[] = new Node\Expr\Assign(
+                    new Node\Expr\Variable($parameter->getName()),
+                    new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $identifier)
+                );
             }
         }
-        return $param->name;
-    }
 
-    /**
-     * @param Node[] $stmts
-     * @param string $paramName
-     * @return Node[]
-     */
-    private function translateContainer(array $stmts, $paramName)
-    {
-        $visitor = new Visitor\ContainerTranslatorVisitor($paramName);
+        $visitor = new Visitor\VariableTranslatorVisitor($map);
         $fileTraverser = new NodeTraverser;
         $fileTraverser->addVisitor($visitor);
-        return $fileTraverser->traverse($stmts);
+        $stmts = $fileTraverser->traverse($stmts);
+
+        // Prepaend
+        return array_merge($prepend, $stmts);
     }
 
     /**

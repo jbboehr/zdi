@@ -3,6 +3,8 @@
 namespace zdi\Container;
 
 use Closure;
+use ReflectionClass;
+use ReflectionFunction;
 
 use zdi\Container;
 use zdi\Definition;
@@ -121,7 +123,7 @@ class RuntimeContainer implements Container
         }
 
         // Build the class
-        $reflectionClass = new \ReflectionClass($class);
+        $reflectionClass = new ReflectionClass($class);
         $object = $reflectionClass->newInstanceArgs($params);
 
         // Do setters
@@ -134,8 +136,14 @@ class RuntimeContainer implements Container
 
     private function makeClosure(Definition\ClosureDefinition $definition)
     {
+        $params = array();
+        foreach( $definition->getParams() as $position => $param ) {
+            $params[$position] = $this->makeParam($param);
+        }
+
         $closure = $definition->getClosure();
-        return $closure($this);
+        $reflectionFunction = new \ReflectionFunction($closure);
+        return $reflectionFunction->invokeArgs($params);
     }
 
     private function makeProvider(Definition\ClassDefinition $definition)
@@ -151,6 +159,8 @@ class RuntimeContainer implements Container
         } else if( $param instanceof Param\ClassParam ) {
             if( $param->isOptional() && !$this->has($param->getClass()) ) {
                 return null;
+            } else if( is_a($this, $param->getClass()) ) {
+                return $this;
             } else {
                 return $this->get($param->getClass());
             }

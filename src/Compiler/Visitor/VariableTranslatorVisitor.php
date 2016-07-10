@@ -6,20 +6,20 @@ use PhpParser\Node as AstNode;
 use PhpParser\NodeVisitorAbstract as NodeVisitor;
 use PhpParser\Node\Expr\Variable;
 
-class ContainerTranslatorVisitor extends NodeVisitor
+class VariableTranslatorVisitor extends NodeVisitor
 {
-    private $varname;
+    private $map;
 
-    public function __construct($varname)
+    public function __construct($map)
     {
-        $this->varname = $varname;
+        $this->map = $map;
     }
 
     public function enterNode(AstNode $node)
     {
         if( $node instanceof Variable ) {
-            if( $node->name === $this->varname ) {
-                $node->name = 'this';
+            if( isset($this->map[$node->name]) ) {
+                return clone $this->map[$node->name];
             }
         }
     }

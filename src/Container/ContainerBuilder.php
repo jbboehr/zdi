@@ -51,10 +51,13 @@ class ContainerBuilder
     public function __construct()
     {
         // Add a default alias for the container interface
-        $closure = static function(Container $container) {
-            return $container;
-        };
-        $this->add(new Definition\ClosureDefinition(Container::class, true, null, $closure));
+//        $closure = static function(Container $container) {
+//            return $container;
+//        };
+//        $this->define(Container::class)
+//            ->factory(true)
+//            ->using($closure)
+//            ->build();
     }
 
     /**

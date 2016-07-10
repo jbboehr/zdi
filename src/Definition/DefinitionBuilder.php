@@ -4,7 +4,9 @@ namespace zdi\Definition;
 
 use Closure;
 use ReflectionClass;
+use ReflectionFunction;
 use ReflectionMethod;
+use ReflectionParameter;
 
 use zdi\Container;
 use zdi\Container\ContainerBuilder;
@@ -146,11 +148,12 @@ class DefinitionBuilder
             $definition = new ClassDefinition($this->class, $this->factory, $this->name, $this->provider);
         } else if( $this->provider instanceof Closure ) {
             $closure = $this->provider;
-            $this->validateClosure($closure);
-            $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure);
+            $reflectionFunction = new ReflectionFunction($closure);
+            $params = $this->convertParameters($reflectionFunction->getParameters());
+            $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure, $params);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
-            $params = $this->convertParameters($reflectionClass->getConstructor());
+            $params = $this->convertConstructor($reflectionClass);
             $setters = $this->convertSetters($reflectionClass);
             $definition = new DataDefinition($this->class, $this->factory, $this->name, $params, $setters);
         } else {
@@ -169,17 +172,29 @@ class DefinitionBuilder
     }
 
     /**
-     * @param ReflectionMethod|null $reflectionMethod
+     * @param ReflectionClass $reflectionClass
      * @return Param[]
      * @throws Exception\DomainException
      */
-    private function convertParameters(ReflectionMethod $reflectionMethod = null)
+    private function convertConstructor(ReflectionClass $reflectionClass)
+    {
+        $reflectionMethod = $reflectionClass->getConstructor();
+        if( $reflectionMethod ) {
+            return $this->convertParameters($reflectionMethod->getParameters());
+        } else {
+            return array();
+        }
+    }
+
+    /**
+     * @param ReflectionParameter[] $parameters
+     * @return Param[]
+     * @throws Exception\DomainException
+     */
+    private function convertParameters($parameters)
     {
         $result = array();
-        if( !$reflectionMethod ) {
-            return $result;
-        }
-        foreach( $reflectionMethod->getParameters() as $parameter ) {
+        foreach( $parameters as $parameter ) {
             $position = $parameter->getPosition();
             $name = $parameter->getName();
             $class = $parameter->getClass();
@@ -202,7 +217,7 @@ class DefinitionBuilder
 
     /**
      * @param $param
-     * @return ParamInterface
+     * @return Param
      * @throws Exception\DomainException
      */
     private function convertParam($param, $isOptional = false)
@@ -248,32 +263,6 @@ class DefinitionBuilder
             return new Param\ClassParam($class->name);
         } else {
             throw new Exception\DomainException('Unknown setter value');
-        }
-    }
-
-    /**
-     * @param Closure $closure
-     * @throws Exception\DomainException
-     */
-    private function validateClosure(Closure $closure)
-    {
-        $reflectionFunction = new \ReflectionFunction($closure);
-        $nParams = $reflectionFunction->getNumberOfParameters();
-        if( $nParams === 0 ) {
-            return;
-        } else if( $nParams !== 1 ) {
-            throw new Exception\DomainException('Closure must have only one or zero parameters');
-        }
-        $parameters = $reflectionFunction->getParameters();
-        $parameter = $parameters[0];
-        if( ($class = $parameter->getClass()) ) {
-            $interfaceClass = Container::class;
-            $paramClass = $class->getName();
-            if( $paramClass !== $interfaceClass && !is_subclass_of('\\' . $paramClass, $interfaceClass) ) {
-                throw new Exception\DomainException('Closure parameter must be zdi\Container or a subclass');
-            }
-        } else {
-            throw new Exception\DomainException('Closure provider parameter must have a typehint');
         }
     }
 }
