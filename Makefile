@@ -2,7 +2,7 @@
 all: vendor
 
 coverage: vendor clean-test tests/tmp
-	./vendor/bin/phpunit --coverage-text --coverage-html=reports
+	php -dzend_extension=xdebug.so vendor/bin/phpunit --coverage-text --coverage-html=reports
 
 clean-test:
 	rm -Rf tests/tmp
