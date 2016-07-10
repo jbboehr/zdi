@@ -313,7 +313,7 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
 
         $this->setExpectedException(DomainException::class);
         $definition = new Fixture\InvalidDefinition(NoArguments::class);
-        $builder->add($definition);
+        $builder->addDefinition($definition);
         // Note: different builders throw at different times here
         $container = $builder->build();
         $container->get(Fixture\NoArguments::class);
@@ -562,8 +562,8 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
             })
             ->build();
         $builder->blacklist(Fixture\InvalidParam::class);
-        $builder->scanDirectories(array(__DIR__ . '/Fixture/'));
-        $builder->scanNamespaces(array('zdi\\Tests\\Fixture\\'));
+        $builder->addDirectories(array(__DIR__ . '/Fixture/'));
+        $builder->addNamespaces(array('zdi\\Tests\\Fixture\\'));
         $container = $builder->build();
 
         $this->defaultAssertions($container, Fixture\NoArguments::class);
@@ -640,6 +640,28 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
             ->build();
         $container = $builder->build();
         $this->assertSame(Fixture\DefaultValueArgument::DEFAULT_VALUE, $container->get(Fixture\DefaultValueArgument::class)->getString());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testModuleObject(Builder $builder)
+    {
+        $builder->addModule(new Fixture\Module());
+        $container = $builder->build();
+        $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testModuleString(Builder $builder)
+    {
+        $builder->addModule(Fixture\Module::class);
+        $container = $builder->build();
+        $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
     }
 
     private function defaultAssertions(Container $container, $class, $key = null)

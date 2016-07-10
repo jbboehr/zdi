@@ -7,6 +7,8 @@ use zdi\Compiler\Compiler;
 use zdi\Definition;
 use zdi\Definition\DefinitionBuilder;
 use zdi\Exception;
+use zdi\Module;
+use zdi\Utils;
 
 /**
  * Class ContainerBuilder
@@ -31,9 +33,24 @@ class ContainerBuilder
     private $definitions = array();
 
     /**
+     * @var string[]
+     */
+    private $directories = array();
+
+    /**
      * @var string
      */
     private $file;
+
+    /**
+     * @var array
+     */
+    private $modules = array();
+
+    /**
+     * @var string[]
+     */
+    private $namespaces = array();
 
     /**
      * @var boolean
@@ -51,20 +68,9 @@ class ContainerBuilder
     private $ttl;
 
     /**
-     * Builder constructor.
+     * @param string $name
+     * @return mixed
      */
-    public function __construct()
-    {
-        // Add a default alias for the container interface
-//        $closure = static function(Container $container) {
-//            return $container;
-//        };
-//        $this->define(Container::class)
-//            ->factory(true)
-//            ->using($closure)
-//            ->build();
-    }
-
     public function __get($name)
     {
         if( property_exists($this, $name) ) {
@@ -75,12 +81,66 @@ class ContainerBuilder
     }
 
     /**
-     * @param Definition definition
+     * @param Definition $definition
      * @return $this
      */
-    public function add(Definition $definition)
+    public function addDefinition(Definition $definition)
     {
         $this->definitions[$definition->getKey()] = $definition;
+        return $this;
+    }
+
+    /**
+     * @param string $directory
+     * @return $this
+     */
+    public function addDirectory($directory)
+    {
+        $this->directories[] = $directory;
+        return $this;
+    }
+
+    /**
+     * @param string[] $directories
+     * @return $this
+     */
+    public function addDirectories(array $directories)
+    {
+        foreach( $directories as $directory ) {
+            $this->directories[] = $directory;
+        }
+        return $this;
+    }
+
+    /**
+     * @param Module|string $module
+     * @return $this
+     */
+    public function addModule($module)
+    {
+        $this->modules[] = $module;
+        return $this;
+    }
+
+    /**
+     * @param string $namespace
+     * @return $this
+     */
+    public function addNamespace($namespace)
+    {
+        $this->namespaces[] = $namespace;
+        return $this;
+    }
+
+    /**
+     * @param string[] $namespaces
+     * @return $this
+     */
+    public function addNamespaces(array $namespaces)
+    {
+        foreach( $namespaces as $namespace ) {
+            $this->namespaces[] = $namespace;
+        }
         return $this;
     }
 
@@ -91,7 +151,7 @@ class ContainerBuilder
      */
     public function alias($interface, $class)
     {
-        $this->add(new Definition\AliasDefinition($interface, $class));
+        $this->addDefinition(new Definition\AliasDefinition($interface, $class));
         return $this;
     }
 
@@ -153,59 +213,6 @@ class ContainerBuilder
     }
 
     /**
-     * @param array $directories
-     * @return $this
-     */
-    public function scanDirectories(array $directories)
-    {
-        foreach( $directories as $directory ) {
-            $this->scanDirectory($directory);
-        }
-        return $this;
-    }
-
-    /**
-     * @param string $directory
-     * @return $this
-     */
-    public function scanDirectory($directory)
-    {
-        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
-        foreach( $it as $file ) {
-            $path = $file->getPathName();
-            if( substr($path, -4) !== '.php' ) {
-                continue;
-            }
-            require_once $path;
-        }
-        return $this;
-    }
-
-    /**
-     * @param string $namespace
-     * @return $this
-     */
-    public function scanNamespace($namespace)
-    {
-        foreach( get_declared_classes() as $class ) {
-            if( 0 !== strpos($class, $namespace) ) {
-                continue;
-            } else if( isset($this->blacklist[$class]) ) {
-                continue;
-            } else if( isset($this->definitions[$class]) ) {
-                continue;
-            }
-            try {
-                $this->define($class)->build();
-            } catch ( \Exception $e ) {
-                // @todo fixme
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @param boolean $flag
      * @return $this
      */
@@ -226,22 +233,16 @@ class ContainerBuilder
     }
 
     /**
-     * @param array $namespaces
-     * @return $this
-     */
-    public function scanNamespaces(array $namespaces)
-    {
-        foreach( $namespaces as $namespace ) {
-            $this->scanNamespace($namespace);
-        }
-        return $this;
-    }
-
-    /**
      * @return Container
      */
     public function build()
     {
+        if( $this->needsRedefine() ) {
+            $this->scanDirectories();
+            $this->executeModules();
+            $this->scanNamespaces();
+        }
+
         if( $this->className ) {
             return $this->buildCompiled();
         } else {
@@ -338,4 +339,58 @@ class ContainerBuilder
             return true;
         }
     }
+
+    private function executeModules()
+    {
+        foreach( $this->modules as $module ) {
+            if( is_string($module) ) {
+                $module = new $module();
+            }
+            if( !($module instanceof Module) ) {
+                throw new Exception\DomainException('Module must implement zdi\\Module, was: ' . Utils::varInfo($module));
+            }
+            $module->define($this);
+        }
+    }
+
+    private function scanDirectories()
+    {
+        foreach( $this->directories as $directory ) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
+            foreach( $it as $file ) {
+                $path = $file->getPathName();
+                if( substr($path, -4) !== '.php') {
+                    continue;
+                }
+                require_once $path;
+            }
+        }
+        return $this;
+    }
+
+    private function scanNamespaces()
+    {
+        foreach( get_declared_classes() as $class ) {
+            $match = false;
+            foreach( $this->namespaces as $namespace ) {
+                if( isset($this->blacklist[$class]) || isset($this->definitions[$class]) ) {
+                    continue 2;
+                }
+                if( strpos($class, $namespace) === 0 ) {
+                    $match = true;
+                    break;
+                }
+            }
+            if( $match ) {
+                try {
+                    $this->define($class)->build();
+                } catch ( \zdi\Exception $e ) {
+                    // @todo fixme
+                }
+            }
+        }
+
+        return $this;
+    }
+
 }

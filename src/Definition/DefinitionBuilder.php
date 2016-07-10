@@ -165,7 +165,7 @@ class DefinitionBuilder
 
         // Add to container
         if( null !== $this->container ) {
-            $this->container->add($definition);
+            $this->container->addDefinition($definition);
             if( $this->alias ) {
                 $this->container->alias($this->alias, $this->class);
             }
