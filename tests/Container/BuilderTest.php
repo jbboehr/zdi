@@ -91,10 +91,11 @@ class BuilderTest extends \PHPUnit_Framework_TestCase
     {
         // Generate a temp file
         $tmpDir = realpath(__DIR__ . '/../tmp') . '/';
-        $tmpFilePrefix = 'zdiContainerBuilderTest_';
-        $tmpFileSuffix = '.tmp.php';
+        $tmpFilePrefix = 'ContainerBuilder';
+        $tmpFileSuffix = '.php';
+        $counter = 0;
         do {
-            $className = $tmpFilePrefix . base_convert(mt_rand(0, PHP_INT_MAX), 10, 36);
+            $className = $tmpFilePrefix . sprintf('%02d', ++$counter);
             $tmpFile = $tmpDir . $className . $tmpFileSuffix;
         } while( file_exists($tmpFile) );
         return array($className, $tmpFile);

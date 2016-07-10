@@ -680,12 +680,15 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
 
     public function containerBuilderProvider()
     {
+        static $counter;
         // Generate a temp file
         $tmpDir = __DIR__ . '/tmp/';
-        $tmpFilePrefix = 'zdiContainerTest_';
-        $tmpFileSuffix = '.tmp.php';
+        $tmpFilePrefix = 'Integration' . sprintf('%02d', ++$counter);
+        $tmpFileSuffix = '.php';
+        $counter2 = 0;
         do {
-            $className = $tmpFilePrefix . base_convert(mt_rand(0, PHP_INT_MAX), 10, 36);
+            $className = $tmpFilePrefix . ($counter2++ ? '_' . $counter2 : '');
+            //$className = $tmpFilePrefix . base_convert(mt_rand(0, PHP_INT_MAX), 10, 36);
             $tmpFile = $tmpDir . $className . $tmpFileSuffix;
         } while( file_exists($tmpFile) );
 
