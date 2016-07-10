@@ -153,6 +153,9 @@ class DefinitionBuilder
             $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure, $params);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
+            if( $reflectionClass->isAbstract() || $reflectionClass->isInterface() ) {
+                throw new Exception\DomainException('Cannot build abstract class or interface');
+            }
             $params = $this->convertConstructor($reflectionClass);
             $setters = $this->convertSetters($reflectionClass);
             $definition = new DataDefinition($this->class, $this->factory, $this->name, $params, $setters);
