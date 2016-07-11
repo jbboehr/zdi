@@ -4,14 +4,13 @@ namespace zdi\Tests;
 
 use zdi\Container;
 use zdi\Container\ContainerBuilder as Builder;
-use zdi\Container\CompileBuilder;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
 use zdi\Param\NamedParam;
 use zdi\Param\ValueParam;
 use zdi\Tests\Fixture\NoArguments;
 
-class IntegrationTest extends \PHPUnit_Framework_TestCase
+class IntegrationTest5 extends \PHPUnit_Framework_TestCase
 {
     /**
      * @param Builder $builder
@@ -664,14 +663,26 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
         $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
     }
 
-    private function defaultAssertions(Container $container, $class, $key = null)
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testInterfaceFails(Builder $builder)
+    {
+        $this->setExpectedException('zdi\\Exception\\DomainException');
+        $builder->define(\ArrayAccess::class)
+            ->build();
+        $builder->build();
+    }
+
+    protected function defaultAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;
         $this->assertInstanceOf($class, $container->get($containerKey));
         $this->assertSame($container->get($containerKey), $container->get($containerKey));
     }
 
-    private function defaultFactoryAssertions(Container $container, $class, $key = null)
+    protected function defaultFactoryAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;
         $this->assertInstanceOf($class, $container->get($containerKey));
