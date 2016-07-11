@@ -2,7 +2,6 @@
 
 namespace zdi\Compiler\DefinitionCompiler;
 
-use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
 use zdi\Container;
@@ -12,27 +11,12 @@ use zdi\Definition\ClassDefinition;
 use zdi\Exception;
 use zdi\Utils;
 
-class ClassDefinitionCompiler implements DefinitionCompiler
+class ClassDefinitionCompiler extends AbstractDefinitionCompiler
 {
-    /**
-     * @var BuilderFactory
-     */
-    private $builderFactory;
-
     /**
      * @var ClassDefinition
      */
-    private $definition;
-
-    /**
-     * @param BuilderFactory $builderFactory
-     * @param ClassDefinition $definition
-     */
-    public function __construct(BuilderFactory $builderFactory, ClassDefinition $definition)
-    {
-        $this->builderFactory = $builderFactory;
-        $this->definition = $definition;
-    }
+    protected $definition;
 
     public function compile()
     {
@@ -65,8 +49,8 @@ class ClassDefinitionCompiler implements DefinitionCompiler
         }
 
         // Prepare method body
-        $providerIdentifier = Utils::classToIdentifier($definition->getProvider());
-        $fetch = new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $providerIdentifier), 'get');
+        $providerDefinition = $this->resolveAlias($definition->getProvider());
+        $fetch = new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $providerDefinition->getIdentifier()), 'get');
 
         if( $prop ) {
             $method->addStmt(new Node\Stmt\Return_(new Node\Expr\Assign(clone $prop, $fetch)));

@@ -4,7 +4,6 @@ namespace zdi\Compiler\DefinitionCompiler;
 
 use ReflectionFunction;
 
-use PhpParser\BuilderFactory;
 use PhpParser\NodeTraverser;
 use PhpParser\Node;
 use PhpParser\NodeVisitor\NameResolver;
@@ -22,27 +21,12 @@ use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
 use zdi\Utils;
 
-class ClosureDefinitionCompiler implements DefinitionCompiler
+class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
 {
-    /**
-     * @var BuilderFactory
-     */
-    private $builderFactory;
-
     /**
      * @var ClosureDefinition
      */
-    private $definition;
-
-    /**
-     * @param BuilderFactory $builderFactory
-     * @param ClosureDefinition $definition
-     */
-    public function __construct(BuilderFactory $builderFactory, ClosureDefinition $definition)
-    {
-        $this->builderFactory = $builderFactory;
-        $this->definition = $definition;
-    }
+    protected $definition;
 
     /**
      * @inheritdoc
@@ -105,10 +89,10 @@ class ClosureDefinitionCompiler implements DefinitionCompiler
             if( $className === Container::class ) {
                 $map[$parameter->getName()] = new Node\Expr\Variable('this');
             } else {
-                $identifier = Utils::classToIdentifier($className);
+                $paramDefinition = $this->resolveAlias($className);
                 $prepend[] = new Node\Expr\Assign(
                     new Node\Expr\Variable($parameter->getName()),
-                    new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $identifier)
+                    new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $paramDefinition->getIdentifier())
                 );
             }
         }

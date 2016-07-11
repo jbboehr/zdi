@@ -2,7 +2,6 @@
 
 namespace zdi\Compiler\DefinitionCompiler;
 
-use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
 use zdi\Container;
@@ -11,29 +10,15 @@ use zdi\Definition;
 use zdi\Definition\DataDefinition;
 use zdi\Exception;
 use zdi\Param;
+use zdi\Tests\Fixture\ContainerArgument;
 use zdi\Utils;
 
-class DataDefinitionCompiler implements DefinitionCompiler
+class DataDefinitionCompiler extends AbstractDefinitionCompiler
 {
     /**
-     * @var BuilderFactory
+     * @var DataDefinition
      */
-    private $builderFactory;
-
-    /**
-     * @var Definition
-     */
-    private $definition;
-
-    /**
-     * @param BuilderFactory $builderFactory
-     * @param DataDefinition $definition
-     */
-    public function __construct(BuilderFactory $builderFactory, DataDefinition $definition)
-    {
-        $this->builderFactory = $builderFactory;
-        $this->definition = $definition;
-    }
+    protected $definition;
 
     /**
      * @inheritdoc
@@ -124,28 +109,27 @@ class DataDefinitionCompiler implements DefinitionCompiler
     private function compileParam(Param $param)
     {
         if( $param instanceof Param\ClassParam ) {
-            $identifier = $param->getIdentifier();
+            $key = $param->getClass();
             // Just return this if it's asking for a container
-            if( $identifier === Utils::classToIdentifier(Container::class) ) {
+            if( $key == Container::class ) {
                 return new Node\Expr\Variable('this');
             }
-            $fetch = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $identifier);
-            if( $param->isOptional() ) {
-                // @todo resolve this at compile-time
-                return new Node\Expr\Ternary(
-                    new Node\Expr\FuncCall(new Node\Name('method_exists'), array(
-                        new Node\Arg(new Node\Expr\Variable('this')),
-                        new Node\Arg(new Node\Scalar\String_($identifier))
-                    )),
-                    $fetch,
-                    new Node\Expr\ConstFetch(new Node\Name('null'))
-                );
+            // Get definition
+            $definition = $this->resolveAlias($key, $param->isOptional());
+            if( $definition ) {
+                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+            } else {
+                return new Node\Expr\ConstFetch(new Node\Name('null'));
             }
-            return $fetch;
         } else if( $param instanceof Param\NamedParam ) {
-            return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
-                new Node\Arg(new Node\Scalar\String_($param->getName()))
-            ));
+            $definition = $this->resolveAlias($param->getName(), true);
+            if( $definition ) {
+                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+            } else {
+                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
+                    new Node\Arg(new Node\Scalar\String_($param->getName()))
+                ));
+            }
         } else if( $param instanceof Param\ValueParam ) {
             return new Node\Arg($this->compileValue($param->getValue()));
         } else {
