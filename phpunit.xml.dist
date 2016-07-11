@@ -3,6 +3,12 @@
         <testsuite>
             <directory suffix="Test.php">tests</directory>
         </testsuite>
+        <testsuite>
+            <directory suffix="Test5.php" phpVersion="7.0.0" phpVersionOperator="&lt;">tests</directory>
+        </testsuite>
+        <testsuite>
+            <directory suffix="Test7.php" phpVersion="7.0.0" phpVersionOperator="&gt;=">tests</directory>
+        </testsuite>
     </testsuites>
 
     <filter>

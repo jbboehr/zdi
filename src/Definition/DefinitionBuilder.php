@@ -149,6 +149,7 @@ class DefinitionBuilder
         } else if( $this->provider instanceof Closure ) {
             $closure = $this->provider;
             $reflectionFunction = new ReflectionFunction($closure);
+            $this->convertReturnType($reflectionFunction);
             $params = $this->convertParameters($reflectionFunction->getParameters());
             $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure, $params);
         } else if( $this->class ) {
@@ -267,5 +268,26 @@ class DefinitionBuilder
         } else {
             throw new Exception\DomainException('Unknown setter value');
         }
+    }
+
+    /**
+     * @param ReflectionFunction $reflectionFunction
+     * @return void
+     * @todo store scalar return type declaration
+     */
+    private function convertReturnType(ReflectionFunction $reflectionFunction)
+    {
+        if( $this->class || !method_exists(ReflectionFunction::class, 'getReturnType') ) {
+            return;
+        }
+        $returnType = $reflectionFunction->getReturnType();
+        if( !$returnType ) {
+            return;
+        }
+        $returnTypeStr = (string) $returnType;
+        if( !class_exists($returnTypeStr, true) ) {
+            return;
+        }
+        $this->class = $returnTypeStr;
     }
 }
