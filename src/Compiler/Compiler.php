@@ -89,7 +89,7 @@ class Compiler
                 $alias = Utils::resolveAlias($this->definitions, $definition, false);
                 $mapNodes[] = new Node\Expr\ArrayItem(
                     new Node\Scalar\String_($alias->getIdentifier()),
-                    new Node\Scalar\String_($definition->getIdentifier())
+                    new Node\Scalar\String_($definition->getKey())
                 );
             } else {
                 if( !$definition->isFactory() ) {
