@@ -2,6 +2,8 @@
 
 namespace zdi\Compiler;
 
+use ArrayObject;
+
 use PhpParser\BuilderFactory;
 use PhpParser\Builder;
 use PhpParser\Node;
@@ -35,6 +37,11 @@ class Compiler
     private $definitions;
 
     /**
+     * @var ArrayObject
+     */
+    private $astCache;
+
+    /**
      * Compiler constructor.
      * @param Definition[] $definitions
      * @param string $className
@@ -45,6 +52,7 @@ class Compiler
         $this->definitions = $definitions;
         list($this->namespace, $this->class) = Utils::extractNamespace($className);
         $this->builderFactory = $builderFactory ?: new BuilderFactory();
+        $this->astCache = new ArrayObject();
     }
 
     /**
@@ -78,11 +86,10 @@ class Compiler
 
         foreach( $definitions as $definition ) {
             if( $definition instanceof Definition\AliasDefinition ) {
-                $keyIdentifier = Utils::classToIdentifier($definition->getClass());
-                $aliasIdentifier = Utils::classToIdentifier($definition->getAlias());
+                $alias = Utils::resolveAlias($this->definitions, $definition, false);
                 $mapNodes[] = new Node\Expr\ArrayItem(
-                    new Node\Scalar\String_($aliasIdentifier),
-                    new Node\Scalar\String_($keyIdentifier)
+                    new Node\Scalar\String_($alias->getIdentifier()),
+                    new Node\Scalar\String_($definition->getIdentifier())
                 );
             } else {
                 if( !$definition->isFactory() ) {
@@ -139,11 +146,11 @@ class Compiler
     private function makeDefinitionCompiler(Definition $definition)
     {
         if( $definition instanceof Definition\DataDefinition ) {
-            return new DefinitionCompiler\DataDefinitionCompiler($this->builderFactory, $definition, $this->definitions);
+            return new DefinitionCompiler\DataDefinitionCompiler($this->builderFactory, $definition, $this->definitions, $this->astCache);
         } else if( $definition instanceof Definition\ClosureDefinition ) {
-            return new DefinitionCompiler\ClosureDefinitionCompiler($this->builderFactory, $definition, $this->definitions);
+            return new DefinitionCompiler\ClosureDefinitionCompiler($this->builderFactory, $definition, $this->definitions, $this->astCache);
         } else if( $definition instanceof Definition\ClassDefinition ) {
-            return new DefinitionCompiler\ClassDefinitionCompiler($this->builderFactory, $definition, $this->definitions);
+            return new DefinitionCompiler\ClassDefinitionCompiler($this->builderFactory, $definition, $this->definitions, $this->astCache);
         } else {
             throw new Exception\DomainException('Unsupported definition: ' . get_class($definition));
         }

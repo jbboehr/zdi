@@ -73,6 +73,53 @@ class Utils
     }
 
     /**
+     * @param array $definitions
+     * @param Definition $definition
+     * @param boolean $isOptional
+     * @return null|Definition
+     * @throws Exception\DomainException
+     */
+    static public function resolveAlias(array $definitions, Definition $definition, $isOptional = false)
+    {
+        while( $definition instanceof Definition\AliasDefinition ) {
+            $definition = self::resolveDefinition($definitions, $definition->getAlias(), $isOptional);
+        }
+        return $definition;
+    }
+
+    /**
+     * @param Definition[] $definitions
+     * @param string $key
+     * @param boolean $isOptional
+     * @return null|Definition
+     */
+    static public function resolveAliasKey(array $definitions, $key, $isOptional = false)
+    {
+        $definition = Utils::resolveDefinition($definitions, $key, $isOptional);
+        if( $definition ) {
+            $definition = Utils::resolveAlias($definitions, $definition, $isOptional);
+        }
+        return $definition;
+    }
+
+    /**
+     * @param Definition[] $definitions
+     * @param string $key
+     * @param boolean $isOptional
+     * @return null|Definition
+     */
+    static public function resolveDefinition(array $definitions, $key, $isOptional = false)
+    {
+        if( isset($definitions[$key]) ) {
+            return $definitions[$key];
+        } else if( $isOptional ) {
+            return null;
+        } else {
+            throw new Exception\OutOfBoundsException("Undefined identifier: " . $key);
+        }
+    }
+
+    /**
      * @param mixed $var
      * @return string
      */

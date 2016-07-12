@@ -16,4 +16,4 @@ test: vendor clean-test tests/tmp
 
 vendor: composer.json composer.lock
 
-.PHONY: all clean clean-test test
+.PHONY: all clean clean-test coverage test

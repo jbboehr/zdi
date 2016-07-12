@@ -12,6 +12,9 @@ class ClassParam implements Param
      */
     private $class;
 
+    /**
+     * @var boolean
+     */
     private $isOptional = false;
 
     /**
@@ -34,13 +37,8 @@ class ClassParam implements Param
     }
 
     /**
-     * @return string
+     * @return boolean
      */
-    public function getIdentifier()
-    {
-        return Utils::classToIdentifier($this->class);
-    }
-
     public function isOptional()
     {
         return $this->isOptional;

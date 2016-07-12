@@ -46,7 +46,6 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
         // Prepare instance check
         if( !$definition->isFactory() ) {
             $method->addStmt($this->makeSingletonCheck());
-            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
         }
 
         $reflectionFunction = new ReflectionFunction($definition->getClosure());
@@ -61,6 +60,12 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
         return $method;
     }
 
+    /**
+     * @param ReflectionFunction $reflectionFunction
+     * @param Node[] $stmts
+     * @return Node[]
+     * @throws Exception\DomainException
+     */
     private function translateParameters(ReflectionFunction $reflectionFunction, $stmts)
     {
         $map = array();
@@ -77,7 +82,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             if( $className === Container::class ) {
                 $map[$parameter->getName()] = new Node\Expr\Variable('this');
             } else {
-                $paramDefinition = $this->resolveAlias($className);
+                $paramDefinition = Utils::resolveAliasKey($this->definitions, $className);
                 $prepend[] = new Node\Expr\Assign(
                     new Node\Expr\Variable($parameter->getName()),
                     new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $paramDefinition->getIdentifier())
@@ -90,7 +95,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
         $fileTraverser->addVisitor($visitor);
         $stmts = $fileTraverser->traverse($stmts);
 
-        // Prepaend
+        // Prepend
         return array_merge($prepend, $stmts);
     }
 
@@ -146,6 +151,9 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
     private function getFileAst(ReflectionFunction $reflection)
     {
         $fileName = $reflection->getFileName();
+        if( isset($this->astCache[$fileName]) ) {
+            return $this->astCache[$fileName];
+        }
         if (!file_exists($fileName)) {
             // @codeCoverageIgnoreStart
             throw new ClosureAnalysisException(
@@ -153,7 +161,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             );
             // @codeCoverageIgnoreEnd
         }
-        return $this->getParser()->parse(file_get_contents($fileName));
+        return $this->astCache[$fileName] = $this->getParser()->parse(file_get_contents($fileName));
     }
 
     /**

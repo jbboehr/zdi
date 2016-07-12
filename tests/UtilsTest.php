@@ -108,4 +108,10 @@ class UtilsTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException(DomainException::class);
         Utils::parserNodeFromValue(tmpfile());
     }
+
+    public function testExtractNamespace()
+    {
+        $this->assertSame(array(null, \stdClass::class), Utils::extractNamespace(\stdClass::class));
+        $this->assertSame(array('Foo', 'Bar'), Utils::extractNamespace('Foo\\Bar'));
+    }
 }

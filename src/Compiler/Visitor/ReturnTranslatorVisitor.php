@@ -17,9 +17,9 @@ class ReturnTranslatorVisitor extends NodeVisitor
 
     public function enterNode(AstNode $node)
     {
-        if( $node instanceof Node\Expr\Closure ) {
+        /* if( $node instanceof Node\Expr\Closure ) {
             throw new \Exception("Cannot nest closures");
-        } else if( $node instanceof Node\Stmt\Return_ ) {
+        } else */ if( $node instanceof Node\Stmt\Return_ ) {
             $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->identifier);
             $newNode = new Node\Stmt\Return_(new Node\Expr\Assign($prop, $node->expr));
             return $newNode;

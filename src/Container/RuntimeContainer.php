@@ -44,21 +44,14 @@ class RuntimeContainer implements Container
             return $this->values[$key];
         }
 
-        // Create the definition if not available
-        if( isset($this->definitions[$key]) ) {
-            $definition = $this->definitions[$key];
-        // @todo re-enable dynamic resolution
-        } else {
-            throw new Exception\OutOfBoundsException("Undefined identifier: " . $key);
-        }
+        // Lookup definition
+        $definition = Utils::resolveAliasKey($this->definitions, $key);
 
         // Build the parameters
         if( $definition instanceof Definition\DataDefinition ) {
             $object = $this->makeDefault($definition);
         } else if( $definition instanceof Definition\ClosureDefinition ) {
             $object = $this->makeClosure($definition);
-        } else if( $definition instanceof Definition\AliasDefinition ) {
-            return $this->get($definition->getAlias());
         } else if( $definition instanceof Definition\ClassDefinition ) {
             $object = $this->makeProvider($definition);
         } else {
@@ -181,5 +174,4 @@ class RuntimeContainer implements Container
             throw new Exception\DomainException("Unsupported param: " . Utils::varInfo($param));
         }
     }
-
 }

@@ -18,6 +18,9 @@ class ClassDefinitionCompiler extends AbstractDefinitionCompiler
      */
     protected $definition;
 
+    /**
+     * @inheritdoc
+     */
     public function compile()
     {
         $definition = $this->definition;
@@ -38,7 +41,7 @@ class ClassDefinitionCompiler extends AbstractDefinitionCompiler
         }
 
         // Prepare method body
-        $providerDefinition = $this->resolveAlias($definition->getProvider());
+        $providerDefinition = Utils::resolveAlias($this->definitions, Utils::resolveDefinition($this->definitions, $definition->getProvider()));
         $fetch = new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $providerDefinition->getIdentifier()), 'get');
 
         if( !$definition->isFactory() ) {

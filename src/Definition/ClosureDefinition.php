@@ -18,8 +18,8 @@ class ClosureDefinition extends AbstractDefinition
     private $params;
 
     /**
-     * @param $class
-     * @param bool $factory
+     * @param string $class
+     * @param boolean $factory
      * @param null|string $name
      * @param Closure $closure
      * @param Param[] $params

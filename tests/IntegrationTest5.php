@@ -389,6 +389,28 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
+    public function testTwoClosures(Builder $builder)
+    {
+        $builder->define(NoArguments::class)
+            ->using(static function() {
+                return new Fixture\NoArguments();
+            })
+            ->build();
+        $builder->define(Fixture\OneObjectArgument::class)
+            ->using(static function(Fixture\NoArguments $obj) {
+                return new Fixture\OneObjectArgument($obj);
+            })
+            ->build();
+        $container = $builder->build();
+
+        $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
+        $this->assertInstanceOf(NoArguments::class, $container->get(Fixture\OneObjectArgument::class)->getObject());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
     public function testSimpleClosureInvalidTypeHint(Builder $builder)
     {
         $this->setExpectedException(DomainException::class);
@@ -509,6 +531,20 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             ->build();
         $container = $builder->build();
         $this->defaultAssertions($container, NoArguments::class, 'noArgs');
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testDoubleAlias(Builder $builder)
+    {
+        $builder->define(NoArguments::class)
+            ->alias('noArgs')
+            ->build();
+        $builder->alias('noArgsAlias', 'noArgs');
+        $container = $builder->build();
+        $this->defaultAssertions($container, NoArguments::class, 'noArgsAlias');
     }
 
     /**

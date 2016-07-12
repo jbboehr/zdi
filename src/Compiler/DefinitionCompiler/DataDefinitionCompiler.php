@@ -105,14 +105,14 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
                 return new Node\Expr\Variable('this');
             }
             // Get definition
-            $definition = $this->resolveAlias($key, $param->isOptional());
+            $definition = Utils::resolveAliasKey($this->definitions, $key, $param->isOptional());
             if( $definition ) {
                 return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
             } else {
                 return new Node\Expr\ConstFetch(new Node\Name('null'));
             }
         } else if( $param instanceof Param\NamedParam ) {
-            $definition = $this->resolveAlias($param->getName(), true);
+            $definition = Utils::resolveAliasKey($this->definitions, $param->getName(), true);
             if( $definition ) {
                 return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
             } else {
