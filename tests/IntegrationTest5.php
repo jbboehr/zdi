@@ -711,6 +711,24 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         $builder->build();
     }
 
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testKeys(Builder $builder)
+    {
+        $builder->define(Fixture\DefaultValueArgument::class)
+            ->build();
+        $builder->define()
+            ->name('someKey')
+            ->using(static function () {
+                return 'someValue';
+            })
+            ->build();
+        $container = $builder->build();
+        $this->assertSame(array(Fixture\DefaultValueArgument::class, 'someKey'), $container->keys());
+    }
+
     protected function defaultAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;

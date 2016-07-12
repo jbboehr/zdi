@@ -243,7 +243,7 @@ class ContainerBuilder
             $this->scanNamespaces();
         }
 
-        if( $this->className ) {
+        if( $this->className || $this->file ) {
             return $this->buildCompiled();
         } else {
             return $this->buildDefault();
@@ -262,7 +262,7 @@ class ContainerBuilder
             $compiler = new Compiler($this->definitions, $this->className);
             $code = $compiler->compile();
 
-            if( !file_put_contents($this->file, $code) ) {
+            if( !$this->isWritable() || !file_put_contents($this->file, $code) ) {
                 throw new Exception\IOException('Failed to write ' . $this->file);
             }
         }
@@ -316,7 +316,7 @@ class ContainerBuilder
             }
 
             if( !$this->stat ) {
-                return false;
+                return true;
             }
 
             clearstatcache(false, $this->file);
@@ -324,12 +324,11 @@ class ContainerBuilder
 
             foreach( $this->definitions as $definition ) {
                 $class = $definition->getClass();
-                if( !class_exists($class, true) ) {
-                    continue;
-                }
-                $reflectionClass = new \ReflectionClass($class);
-                if( filemtime($reflectionClass->getFileName()) > $mtime ) {
-                    return true;
+                if( class_exists($class, true) ) {
+                    $reflectionClass = new \ReflectionClass($class);
+                    if( filemtime($reflectionClass->getFileName()) > $mtime ) {
+                        return true;
+                    }
                 }
             }
 
@@ -393,4 +392,12 @@ class ContainerBuilder
         return $this;
     }
 
+    private function isWritable()
+    {
+        if( file_exists($this->file) ) {
+            return is_writable($this->file);
+        } else {
+            return is_writable(dirname($this->file));
+        }
+    }
 }

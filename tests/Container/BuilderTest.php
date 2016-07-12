@@ -2,6 +2,7 @@
 
 namespace zdi\Tests\Definition;
 
+use zdi\Exception;
 use zdi\Container\ContainerBuilder;
 use zdi\Tests\Fixture;
 
@@ -73,6 +74,50 @@ class BuilderTest extends \PHPUnit_Framework_TestCase
         // Dynamic always requires redefine
         $builder2 = (new ContainerBuilder());
         $this->assertTrue($builder2->needsRedefine());
+    }
+
+    public function testInvalidCompiledArgs1()
+    {
+        $this->setExpectedException(Exception\DomainException::class);
+        $builder = new ContainerBuilder();
+        $builder->file($this->mktmp());
+        $builder->build();
+    }
+
+    public function testInvalidCompiledArgs2()
+    {
+        $this->setExpectedException(Exception\DomainException::class);
+        $builder = new ContainerBuilder();
+        $builder->className('AnyClassName');
+        $builder->build();
+    }
+
+    public function testInvalidCompiledArgs3()
+    {
+        $this->setExpectedException(Exception\ClassNotFoundException::class);
+        $builder = new ContainerBuilder();
+        $builder->file(__DIR__ . '/../Fixture/empty-file.php');
+        $builder->className('AnyClassName');
+        $builder->stat(true);
+        $builder->build();
+    }
+
+    public function testReadOnlyCompiledFile()
+    {
+        $this->setExpectedException(Exception\IOException::class);
+        $builder = new ContainerBuilder();
+        $builder->file(__DIR__ . '/../Fixture/read-only-file.php');
+        $builder->className('AnyClassName');
+        $builder->ttl(0);
+        $builder->build();
+    }
+
+    public function testInvalidModule()
+    {
+        $this->setExpectedException(Exception\DomainException::class);
+        $builder = new ContainerBuilder();
+        $builder->addModule(\ArrayObject::class);
+        $builder->build();
     }
 
     private function getBuilder()
