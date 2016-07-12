@@ -54,11 +54,9 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
                                */');
 
             // Add instance check
-            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
-            $method->addStmt(new Node\Stmt\If_(
-                new Node\Expr\Isset_(array($prop)),
-                array('stmts' => array(new Node\Stmt\Return_($prop)))
-            ));
+            $check = $this->makeSingletonFetch();
+            $prop = $check->expr;
+            $method->addStmts($check->stmts);
         }
 
         $reflectionFunction = new ReflectionFunction($definition->getClosure());

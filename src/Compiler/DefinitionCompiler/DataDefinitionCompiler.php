@@ -46,11 +46,9 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
                                */');
 
             // Add instance check
-            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
-            $method->addStmt(new Node\Stmt\If_(
-                new Node\Expr\Isset_(array($prop)),
-                array('stmts' => array(new Node\Stmt\Return_($prop)))
-            ));
+            $check = $this->makeSingletonFetch();
+            //$prop = $check->expr;
+            $method->addStmts($check->stmts);
         }
 
         // Prepare return variable
@@ -61,21 +59,18 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         }
 
         // Compile constructor
-        $paramNodes = array();
-        foreach( $definition->getParams() as $position => $param ) {
-            $paramNodes[] = $this->compileParam($param);
-        }
-        $construct = new Node\Expr\New_(new Node\Name\FullyQualified($definition->getClass()), $paramNodes);
+        $construct = $this->compileConstructor();
+        $method->addStmts($construct->stmts);
 
         // Compile setters
         $setters = $this->compileSetters($definition->getSetters(), $retVar);
 
         // Add return statement
         if( $setters ) {
-            $method->addStmt(new Node\Expr\Assign(clone $retVar, $construct));
+            $method->addStmt(new Node\Expr\Assign(clone $retVar, $construct->expr));
             $method->addStmts($setters);
         } else {
-            $retVar = new Node\Expr\Assign(clone $retVar, $construct);
+            $retVar = new Node\Expr\Assign(clone $retVar, $construct->expr);
         }
 
         // Compile return
@@ -83,6 +78,24 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
 
         // Return statements
         return $property ? array($property, $method) : array($method);
+    }
+
+    /**
+     * @return Fetch
+     */
+    private function compileConstructor()
+    {
+        $ret = new Fetch();
+        $paramNodes = array();
+        foreach( $this->definition->getParams() as $position => $param ) {
+            $fetch = $this->compileParam($param);
+            foreach( $fetch->stmts as $stmt ) {
+                $ret->stmts[] = $stmt;
+            }
+            $paramNodes[] = $fetch->expr;
+        }
+        $ret->expr = new Node\Expr\New_(new Node\Name\FullyQualified($this->definition->getClass()), $paramNodes);
+        return $ret;
     }
 
     /**
@@ -94,8 +107,12 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
     {
         $stmts = array();
         foreach( $setters as $method => $param ) {
+            $fetch = $this->compileParam($param);
+            foreach( $fetch->stmts as $stmt ) {
+                $stmts[] = $stmt;
+            }
             $stmts[] = new Node\Expr\MethodCall(clone $var, $method, array(
-                new Node\Arg($this->compileParam($param))
+                new Node\Arg($fetch->expr)
             ));
         }
         return $stmts;
@@ -103,38 +120,36 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
 
     /**
      * @param Param $param
-     * @return Node\Expr
+     * @return Fetch
      * @throws Exception\DomainException
      */
     private function compileParam(Param $param)
     {
+        $ret = new Fetch();
         if( $param instanceof Param\ClassParam ) {
             $key = $param->getClass();
             // Just return this if it's asking for a container
             if( $key == Container::class ) {
-                return new Node\Expr\Variable('this');
-            }
-            // Get definition
-            $definition = $this->resolveAlias($key, $param->isOptional());
-            if( $definition ) {
-                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+                $ret->expr = new Node\Expr\Variable('this');
             } else {
-                return new Node\Expr\ConstFetch(new Node\Name('null'));
+                $ret = $this->resolveFetch($key, $param->isOptional());
             }
         } else if( $param instanceof Param\NamedParam ) {
             $definition = $this->resolveAlias($param->getName(), true);
             if( $definition ) {
-                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+                $ret->expr = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
             } else {
-                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
+                $ret->expr = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
                     new Node\Arg(new Node\Scalar\String_($param->getName()))
                 ));
             }
         } else if( $param instanceof Param\ValueParam ) {
-            return new Node\Arg($this->compileValue($param->getValue()));
+            $ret->expr = new Node\Arg($this->compileValue($param->getValue()));
         } else {
             throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param));
         }
+
+        return $ret;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace zdi\Compiler\DefinitionCompiler;
 
 use PhpParser\BuilderFactory;
+use PhpParser\Node;
 
 use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
@@ -58,5 +59,51 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
         } else {
             return $definition;
         }
+    }
+
+    protected function resolveFetch($key, $isOptional = false)
+    {
+        $ret = new Fetch();
+        $definition = $this->resolveAlias($key, $isOptional);
+        if( $definition ) {
+            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $definition->getIdentifier());
+            $method = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+            if( $definition->isFactory() ) {
+                $ret->expr = clone $method;
+            } else {
+                $ret->expr = clone $prop;
+                $ret->stmts[] = new Node\Stmt\If_(
+                    new Node\Expr\BinaryOp\Identical(
+                        new Node\Expr\ConstFetch(new Node\Name('null')),
+                        clone $prop
+                    ),
+                    array(
+                        'stmts' => array(
+                            /* new Node\Expr\Assign(
+                                clone $prop, */
+                                clone $method
+                            /* ), */
+                        )
+                    )
+                );
+            }
+        } else {
+            $ret->expr = new Node\Expr\ConstFetch(new Node\Name('null'));
+        }
+        return $ret;
+    }
+
+    protected function makeSingletonFetch()
+    {
+        $ret = new Fetch();
+        $ret->expr = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->definition->getIdentifier());
+        $ret->stmts[] = new Node\Stmt\If_(
+            new Node\Expr\BinaryOp\NotIdentical(
+                new Node\Expr\ConstFetch(new Node\Name('null')),
+                clone $ret->expr
+            ),
+            array('stmts' => array(new Node\Stmt\Return_(clone $ret->expr)))
+        );
+        return $ret;
     }
 }
