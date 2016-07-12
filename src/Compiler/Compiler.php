@@ -30,11 +30,6 @@ class Compiler
     private $class;
 
     /**
-     * @var array
-     */
-    private $uniques;
-
-    /**
      * @var Definition[]
      */
     private $definitions;
@@ -42,28 +37,14 @@ class Compiler
     /**
      * Compiler constructor.
      * @param Definition[] $definitions
-     * @param string $class
-     * @param string $namespace
+     * @param string $className
      * @param BuilderFactory|null $builderFactory
      */
     public function __construct(array $definitions, $className, BuilderFactory $builderFactory = null)
     {
         $this->definitions = $definitions;
-
-        // Extract namespace/class
-        $pos = strrpos($className, '\\');
-        if( false === $pos ) {
-            $this->class = $className;
-        } else {
-            $this->namespace = substr($className, 0, $pos);
-            $this->class = substr($className, $pos + 1);
-        }
-
-        // Make builder factory
-        if( !$builderFactory ) {
-            $builderFactory = new BuilderFactory();
-        }
-        $this->builderFactory = $builderFactory;
+        list($this->namespace, $this->class) = Utils::extractNamespace($className);
+        $this->builderFactory = $builderFactory ?: new BuilderFactory();
     }
 
     /**
@@ -104,18 +85,26 @@ class Compiler
                     new Node\Scalar\String_($keyIdentifier)
                 );
             } else {
+                if( !$definition->isFactory() ) {
+                    $class->addStmt(
+                        $property = $this->builderFactory->property($definition->getIdentifier())
+                            ->makePrivate()
+                            ->setDocComment('/**
+                                              * @var ' . $definition->getTypeHint() . '
+                                              */')
+                    );
+                }
+
                 $identifier = $definition->getIdentifier();
 
                 // Add method
-                $class->addStmts($this->compileDefinition($definition));
+                $class->addStmt($this->compileDefinition($definition));
 
                 // Add map entry
                 $mapNodes[] = new Node\Expr\ArrayItem(
                     new Node\Scalar\String_($identifier),
-                    new Node\Scalar\String_($this->resolveUniqueIdentifier($definition->getKey()))
+                    new Node\Scalar\String_($definition->getKey())
                 );
-
-                $this->uniques[strtolower($identifier)] = $identifier;
             }
         }
 
@@ -134,7 +123,7 @@ class Compiler
 
     /**
      * @param Definition $definition
-     * @return \PhpParser\BuilderAbstract[]
+     * @return \PhpParser\BuilderAbstract
      * @throws Exception\DomainException
      */
     private function compileDefinition(Definition $definition)
@@ -157,17 +146,6 @@ class Compiler
             return new DefinitionCompiler\ClassDefinitionCompiler($this->builderFactory, $definition, $this->definitions);
         } else {
             throw new Exception\DomainException('Unsupported definition: ' . get_class($definition));
-        }
-    }
-
-    private function resolveUniqueIdentifier($key)
-    {
-        $lower = $key;
-        if( isset($this->uniques[$lower]) ) {
-            return $this->uniques[$lower];
-        } else {
-            $this->uniques[$lower] = $key;
-            return $key;
         }
     }
 }

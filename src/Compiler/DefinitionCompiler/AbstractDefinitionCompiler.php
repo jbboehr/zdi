@@ -3,6 +3,7 @@
 namespace zdi\Compiler\DefinitionCompiler;
 
 use PhpParser\BuilderFactory;
+use PhpParser\Node;
 
 use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
@@ -58,5 +59,20 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
         } else {
             return $definition;
         }
+    }
+
+    /**
+     * @return Node\Stmt\If_
+     */
+    protected function makeSingletonCheck()
+    {
+        $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->definition->getIdentifier());
+        return new Node\Stmt\If_(
+            new Node\Expr\BinaryOp\NotIdentical(
+                new Node\Expr\ConstFetch(new Node\Name('null')),
+                clone $prop
+            ),
+            array('stmts' => array(new Node\Stmt\Return_(clone $prop)))
+        );
     }
 }

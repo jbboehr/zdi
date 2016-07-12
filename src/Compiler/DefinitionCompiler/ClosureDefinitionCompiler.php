@@ -44,21 +44,9 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
                               */');
 
         // Prepare instance check
-        $property = null;
         if( !$definition->isFactory() ) {
-            // Add property to store instance
-            $property = $this->builderFactory->property($identifier)
-                ->makePrivate()
-                ->setDocComment('/**
-                               * @var ' . $definition->getTypeHint() . '
-                               */');
-
-            // Add instance check
+            $method->addStmt($this->makeSingletonCheck());
             $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
-            $method->addStmt(new Node\Stmt\If_(
-                new Node\Expr\Isset_(array($prop)),
-                array('stmts' => array(new Node\Stmt\Return_($prop)))
-            ));
         }
 
         $reflectionFunction = new ReflectionFunction($definition->getClosure());
@@ -70,7 +58,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
         $stmts = $this->translateReturnStatements($stmts);
         $method->addStmts($stmts);
 
-        return $property ? array($property, $method) : array($method);
+        return $method;
     }
 
     private function translateParameters(ReflectionFunction $reflectionFunction, $stmts)

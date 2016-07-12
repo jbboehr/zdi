@@ -31,33 +31,22 @@ class ClassDefinitionCompiler extends AbstractDefinitionCompiler
                               */');
 
         // Prepare instance check
-        $property = $prop = null;
+        $prop = null;
         if( !$definition->isFactory() ) {
-            // Add property to store instance
-            $property = $this->builderFactory->property($identifier)
-                ->makePrivate()
-                ->setDocComment('/**
-                               * @var ' . $definition->getTypeHint() . '
-                               */');
-
-            // Add instance check
+            $method->addStmt($this->makeSingletonCheck());
             $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
-            $method->addStmt(new Node\Stmt\If_(
-                new Node\Expr\Isset_(array(clone $prop)),
-                array('stmts' => array(new Node\Stmt\Return_($prop)))
-            ));
         }
 
         // Prepare method body
         $providerDefinition = $this->resolveAlias($definition->getProvider());
         $fetch = new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $providerDefinition->getIdentifier()), 'get');
 
-        if( $prop ) {
+        if( !$definition->isFactory() ) {
             $method->addStmt(new Node\Stmt\Return_(new Node\Expr\Assign(clone $prop, $fetch)));
         } else {
             $method->addStmt(new Node\Stmt\Return_($fetch));
         }
 
-        return $property ? array($property, $method) : array($method);
+        return $method;
     }
 }

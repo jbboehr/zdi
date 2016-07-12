@@ -20,6 +20,23 @@ class Utils
     }
 
     /**
+     * @param string $className
+     * @return string[]
+     */
+    static public function extractNamespace($className)
+    {
+        $pos = strrpos($className, '\\');
+        if( false === $pos ) {
+            $namespace = null;
+            $class = $className;
+        } else {
+            $namespace = substr($className, 0, $pos);
+            $class = substr($className, $pos + 1);
+        }
+        return array($namespace, $class);
+    }
+
+    /**
      * @param string $class
      * @return boolean
      */

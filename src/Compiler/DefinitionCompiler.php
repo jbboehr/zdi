@@ -7,7 +7,7 @@ use PhpParser\BuilderAbstract;
 interface DefinitionCompiler
 {
     /**
-     * @return BuilderAbstract[]
+     * @return BuilderAbstract
      */
     public function compile();
 }
