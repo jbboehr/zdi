@@ -19,6 +19,7 @@ use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
 use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
+use zdi\Param;
 use zdi\Utils;
 
 class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
@@ -70,22 +71,15 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
     {
         $map = array();
         $prepend = array();
-        foreach( $reflectionFunction->getParameters() as $parameter ) {
-            $class = $parameter->getClass();
-            if( !$class ) {
-                // @codeCoverageIgnoreStart
-                // Note: this should be covered by the definition builder
-                throw new Exception\DomainException('Closure parameter must have a type hint');
-                // @codeCoverageIgnoreEnd
-            }
-            $className = $parameter->getClass()->getName();
-            if( $className === Container::class ) {
-                $map[$parameter->getName()] = new Node\Expr\Variable('this');
+        $reflectionParameters = $reflectionFunction->getParameters();
+        foreach( $this->definition->getParams() as $position => $param ) {
+            $reflectionParameter = $reflectionParameters[$position];
+            if( $param instanceof Param\ClassParam && $param->getClass() === Container::class ) {
+                $map[$reflectionParameter->getName()] = new Node\Expr\Variable('this');
             } else {
-                $paramDefinition = Utils::resolveAliasKey($this->definitions, $className);
                 $prepend[] = new Node\Expr\Assign(
-                    new Node\Expr\Variable($parameter->getName()),
-                    new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $paramDefinition->getIdentifier())
+                    new Node\Expr\Variable($reflectionParameter->getName()),
+                    $this->compileParam($param)
                 );
             }
         }

@@ -134,7 +134,6 @@ class DefinitionBuilder
      */
     public function using($provider)
     {
-        $this->params = null;
         $this->provider = $provider;
         return $this;
     }

@@ -411,6 +411,30 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
+    public function testClosureWithParam(Builder $builder)
+    {
+        $builder->define(NoArguments::class)
+            ->build();
+        $builder->define(NoArguments::class)
+            ->name('noArgs')
+            ->build();
+        $builder->define(Fixture\OneObjectArgument::class)
+            ->param(1, new NamedParam('noArgs'))
+            ->using(static function(Fixture\NoArguments $obj, Fixture\NoArguments $obj2) {
+                return new Fixture\OneObjectArgument($obj2);
+            })
+            ->build();
+        $container = $builder->build();
+
+        $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
+        $this->assertInstanceOf(NoArguments::class, $container->get(Fixture\OneObjectArgument::class)->getObject());
+        $this->assertSame($container->get('noArgs'), $container->get(Fixture\OneObjectArgument::class)->getObject());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
     public function testSimpleClosureInvalidTypeHint(Builder $builder)
     {
         $this->setExpectedException(DomainException::class);
