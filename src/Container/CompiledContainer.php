@@ -9,6 +9,7 @@ abstract class CompiledContainer implements Container
 {
     private $values;
 
+    static protected $factories;
     static protected $map;
 
     /**
@@ -17,7 +18,15 @@ abstract class CompiledContainer implements Container
     public function get($key)
     {
         if( isset(static::$map[$key]) ) {
-            return $this->{static::$map[$key]}();
+            $identifier = static::$map[$key];
+            if( property_exists($this, $identifier) ) {
+                if( null !== $this->$identifier ) {
+                    return $this->$identifier;
+                } else {
+                    return $this->$identifier = $this->{$identifier}();
+                }
+            }
+            return $this->{$identifier}();
         } else if( isset($this->values[$key]) ) {
             return $this->values[$key];
         } else {

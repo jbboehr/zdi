@@ -15,4 +15,9 @@ class Fetch
      * @var Node\Expr
      */
     public $expr;
+
+    /**
+     * @var boolean
+     */
+    public $found = true;
 }

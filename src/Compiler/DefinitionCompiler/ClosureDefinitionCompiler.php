@@ -48,7 +48,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
         if( !$definition->isFactory() ) {
             // Add property to store instance
             $property = $this->builderFactory->property($identifier)
-                ->makePrivate()
+                ->makeProtected()
                 ->setDocComment('/**
                                * @var ' . $definition->getTypeHint() . '
                                */');
@@ -56,7 +56,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             // Add instance check
             $check = $this->makeSingletonFetch();
             $prop = $check->expr;
-            $method->addStmts($check->stmts);
+//            $method->addStmts($check->stmts);
         }
 
         $reflectionFunction = new ReflectionFunction($definition->getClosure());

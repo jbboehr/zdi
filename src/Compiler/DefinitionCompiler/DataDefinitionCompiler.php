@@ -40,7 +40,7 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         if( !$definition->isFactory() ) {
             // Add property to store instance
             $property = $this->builderFactory->property($identifier)
-                ->makePrivate()
+                ->makeProtected()
                 ->setDocComment('/**
                                * @var ' . $definition->getTypeHint() . '
                                */');
@@ -48,15 +48,11 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
             // Add instance check
             $check = $this->makeSingletonFetch();
             //$prop = $check->expr;
-            $method->addStmts($check->stmts);
+//            $method->addStmts($check->stmts);
         }
 
         // Prepare return variable
-        if( $definition->isFactory() ) {
-            $retVar = new Node\Expr\Variable($identifier);
-        } else {
-            $retVar = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
-        }
+        $retVar = new Node\Expr\Variable($identifier);
 
         // Compile constructor
         $construct = $this->compileConstructor();
@@ -70,7 +66,7 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
             $method->addStmt(new Node\Expr\Assign(clone $retVar, $construct->expr));
             $method->addStmts($setters);
         } else {
-            $retVar = new Node\Expr\Assign(clone $retVar, $construct->expr);
+            $retVar = $construct->expr;
         }
 
         // Compile return
@@ -135,14 +131,14 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
                 $ret = $this->resolveFetch($key, $param->isOptional());
             }
         } else if( $param instanceof Param\NamedParam ) {
-            $definition = $this->resolveAlias($param->getName(), true);
-            if( $definition ) {
-                $ret->expr = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
-            } else {
+            $key = $param->getName();
+            $ret = $this->resolveFetch($key, true);
+            if( !$ret->found ) {
                 $ret->expr = new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
                     new Node\Arg(new Node\Scalar\String_($param->getName()))
                 ));
             }
+            return $ret;
         } else if( $param instanceof Param\ValueParam ) {
             $ret->expr = new Node\Arg($this->compileValue($param->getValue()));
         } else {

@@ -129,6 +129,26 @@ class Compiler
                                   */')
         );
 
+        // Add factories
+//        $factoryNodes = array();
+//        foreach( $this->definitions as $definition ) {
+//            if( $definition->isFactory() ) {
+//                $factoryNodes[] = new Node\Expr\ArrayItem(
+//                    new Node\Expr\ConstFetch(new Node\Name('true')),
+//                    new Node\Scalar\String_($definition->getIdentifier())
+//                );
+//            }
+//        }
+//        $class->addStmt(
+//            $this->builderFactory->property('factories')
+//                ->makeProtected()
+//                ->makeStatic()
+//                ->setDefault(new Node\Expr\Array_($factoryNodes))
+//                ->setDocComment('/**
+//                                  * @var array
+//                                  */')
+//        );
+
         return $class;
     }
 

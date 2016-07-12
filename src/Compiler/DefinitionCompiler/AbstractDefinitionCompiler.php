@@ -79,15 +79,16 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
                     ),
                     array(
                         'stmts' => array(
-                            /* new Node\Expr\Assign(
-                                clone $prop, */
+                            new Node\Expr\Assign(
+                                clone $prop,
                                 clone $method
-                            /* ), */
+                            ),
                         )
                     )
                 );
             }
         } else {
+            $ret->found = false;
             $ret->expr = new Node\Expr\ConstFetch(new Node\Name('null'));
         }
         return $ret;
