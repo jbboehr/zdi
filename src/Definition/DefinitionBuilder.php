@@ -28,9 +28,9 @@ class DefinitionBuilder
     private $class;
 
     /**
-     * @var boolean
+     * @var integer
      */
-    private $factory = false;
+    private $flags = 0;
 
     /**
      * @var string
@@ -83,7 +83,7 @@ class DefinitionBuilder
      */
     public function factory()
     {
-        $this->factory = true;
+        $this->flags |= Definition::FACTORY;
         return $this;
     }
 
@@ -124,7 +124,7 @@ class DefinitionBuilder
      */
     public function singleton()
     {
-        $this->factory = false;
+        $this->flags = ($this->flags & ~Definition::FACTORY);
         return $this;
     }
 
@@ -145,13 +145,13 @@ class DefinitionBuilder
     public function build()
     {
         if( is_string($this->provider) ) {
-            $definition = new ClassDefinition($this->class, $this->factory, $this->name, $this->provider);
+            $definition = new ClassDefinition($this->provider, $this->class, $this->name, $this->flags);
         } else if( $this->provider instanceof Closure ) {
             $closure = $this->provider;
             $reflectionFunction = new ReflectionFunction($closure);
             $this->convertReturnType($reflectionFunction);
             $params = $this->convertParameters($reflectionFunction->getParameters());
-            $definition = new ClosureDefinition($this->class, $this->factory, $this->name, $closure, $params);
+            $definition = new ClosureDefinition($closure, $params, $this->class, $this->name, $this->flags);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
             if( $reflectionClass->isAbstract() || $reflectionClass->isInterface() ) {
@@ -159,7 +159,7 @@ class DefinitionBuilder
             }
             $params = $this->convertConstructor($reflectionClass);
             $setters = $this->convertSetters($reflectionClass);
-            $definition = new DataDefinition($this->class, $this->factory, $this->name, $params, $setters);
+            $definition = new DataDefinition($params, $setters, $this->class, $this->name, $this->flags);
         } else {
             throw new Exception\DomainException('Unable to determine definition type');
         }

@@ -10,15 +10,15 @@ class ClassDefinition extends AbstractDefinition
     private $provider;
 
     /**
-     * @param $class
-     * @param bool $factory
+     * @param string $provider
+     * @param string $class
      * @param null|string $name
-     * @param $provider
+     * @param integer $flags
      */
-    public function __construct($class, $factory, $name, $provider)
+    public function __construct($provider, $class, $name, $flags)
     {
-        parent::__construct($class, $factory, $name);
         $this->provider = $provider;
+        parent::__construct($class, $name, $flags);
     }
 
     /**

@@ -4,6 +4,8 @@ namespace zdi;
 
 interface Definition
 {
+    const FACTORY = 1;
+    
     public function getClass();
 
     public function getName();
