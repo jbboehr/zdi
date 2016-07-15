@@ -120,6 +120,21 @@ class Utils
     }
 
     /**
+     * @param Definition[] $definitions
+     * @param $key
+     * @return Definition
+     */
+    static public function resolveGlobalKey(array $definitions, $key)
+    {
+        $definition = Utils::resolveAliasKey($definitions, $key, true);
+        if( $definition && $definition->isGlobal() ) {
+            return $definition;
+        } else {
+            throw new Exception\OutOfBoundsException("Undefined identifier: " . $key);
+        }
+    }
+
+    /**
      * @param mixed $var
      * @return string
      */

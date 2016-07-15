@@ -467,7 +467,7 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             return;
         }
 
-        $this->setExpectedException(DomainException::class);
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function(callable $whoops) {})
             ->build();
@@ -487,7 +487,7 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             return;
         }
 
-        $this->setExpectedException(DomainException::class);
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function($whoops) {})
             ->build();
@@ -526,7 +526,7 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             return;
         }
 
-        $this->setExpectedException(DomainException::class);
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function($container) {
                 return new Fixture\NoArguments();
@@ -567,7 +567,7 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             return;
         }
 
-        $this->setExpectedException(DomainException::class);
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function(Container $container, $somethingElse) {
                 return new Fixture\NoArguments();
@@ -805,6 +805,45 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             ->build();
         $container = $builder->build();
         $this->assertSame(array(Fixture\DefaultValueArgument::class, 'someKey'), $container->keys());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('str')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->define(Fixture\OneScalarArgument::class)
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get(Fixture\OneScalarArgument::class)->getString());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalAliasedParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('stralias')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->alias('str', 'stralias');
+        $builder->define(Fixture\OneScalarArgument::class)
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get(Fixture\OneScalarArgument::class)->getString());
     }
 
     protected function defaultAssertions(Container $container, $class, $key = null)

@@ -12,11 +12,18 @@ class UnresolvedParam implements Param
     private $name;
 
     /**
-     * @param string $name
+     * @var string
      */
-    public function __construct($name)
+    private $type;
+
+    /**
+     * @param string $name
+     * @param string|null $type
+     */
+    public function __construct($name, $type = null)
     {
         $this->name = $name;
+        $this->type = $type;
     }
 
     /**
@@ -25,5 +32,13 @@ class UnresolvedParam implements Param
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getType()
+    {
+        return $this->type;
     }
 }

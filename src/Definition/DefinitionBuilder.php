@@ -120,6 +120,20 @@ class DefinitionBuilder
     }
 
     /**
+     * @param boolean $global
+     * @return $this
+     */
+    public function setGlobal($global = true)
+    {
+        if( $global ) {
+            $this->flags |= Definition::IS_GLOBAL;
+        } else {
+            $this->flags = ($this->flags & ~Definition::IS_GLOBAL);
+        }
+        return $this;
+    }
+
+    /**
      * @return $this
      */
     public function singleton()
@@ -211,7 +225,7 @@ class DefinitionBuilder
             } else if( $parameter->isDefaultValueAvailable() ) {
                 $result[$position] = new Param\ValueParam($parameter->getDefaultValue());
             } else {
-                $result[$position] = new Param\UnresolvedParam($parameter->getName());
+                $result[$position] = new Param\UnresolvedParam($parameter->getName(), $parameter->getType());
 //                throw new Exception\DomainException(
 //                    'Unresolved parameter: "' . $name . '" for ' . $this->class ?: $this->name
 //                );

@@ -170,6 +170,9 @@ class RuntimeContainer implements Container
             }
         } else if( $param instanceof Param\ValueParam ) {
             return $param->getValue();
+        } else if( $param instanceof Param\UnresolvedParam ) {
+            $definition = Utils::resolveGlobalKey($this->definitions, $param->getName());
+            return $this->get($definition->getKey());
         } else {
             throw new Exception\DomainException("Unsupported param: " . Utils::varInfo($param));
         }

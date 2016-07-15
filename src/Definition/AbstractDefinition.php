@@ -51,6 +51,14 @@ abstract class AbstractDefinition implements Definition
     }
 
     /**
+     * @return boolean
+     */
+    public function isGlobal()
+    {
+        return (boolean) ($this->flags & Definition::IS_GLOBAL);
+    }
+
+    /**
      * @return null|string
      */
     public function getName()

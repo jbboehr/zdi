@@ -5,7 +5,8 @@ namespace zdi;
 interface Definition
 {
     const FACTORY = 1;
-    
+    const IS_GLOBAL = 2;
+
     public function getClass();
 
     public function getName();
@@ -17,4 +18,6 @@ interface Definition
     public function getTypeHint();
 
     public function isFactory();
+
+    public function isGlobal();
 }
