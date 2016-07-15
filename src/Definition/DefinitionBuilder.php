@@ -225,7 +225,8 @@ class DefinitionBuilder
             } else if( $parameter->isDefaultValueAvailable() ) {
                 $result[$position] = new Param\ValueParam($parameter->getDefaultValue());
             } else {
-                $result[$position] = new Param\UnresolvedParam($parameter->getName(), $parameter->getType());
+                $type = ($class = $parameter->getClass()) ? $class->getName() : null;
+                $result[$position] = new Param\UnresolvedParam($parameter->getName(), $type);
 //                throw new Exception\DomainException(
 //                    'Unresolved parameter: "' . $name . '" for ' . $this->class ?: $this->name
 //                );
