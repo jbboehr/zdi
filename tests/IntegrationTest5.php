@@ -846,6 +846,28 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         $this->assertSame('val', $container->get(Fixture\OneScalarArgument::class)->getString());
     }
 
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalClosureParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('str')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->define('str2')
+            ->using(static function ($str) {
+                return $str;
+            })
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get('str2'));
+    }
+
     protected function defaultAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;
