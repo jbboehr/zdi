@@ -13,9 +13,9 @@ abstract class AbstractDefinition implements Definition
     private $class;
 
     /**
-     * @var boolean
+     * @var integer
      */
-    private $factory;
+    private $flags;
 
     /**
      * @var string
@@ -24,13 +24,13 @@ abstract class AbstractDefinition implements Definition
 
     /**
      * @param $class
-     * @param boolean $factory
      * @param string|null $name
+     * @param integer $flags
      */
-    public function __construct($class, $factory = false, $name = null)
+    public function __construct($class, $name = null, $flags = 0)
     {
         $this->class = $class;
-        $this->factory = $factory;
+        $this->flags = $flags;
         $this->name = $name;
     }
 
@@ -47,7 +47,15 @@ abstract class AbstractDefinition implements Definition
      */
     public function isFactory()
     {
-        return $this->factory;
+        return (boolean) ($this->flags & Definition::FACTORY);
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isGlobal()
+    {
+        return (boolean) ($this->flags & Definition::IS_GLOBAL);
     }
 
     /**

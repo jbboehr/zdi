@@ -93,8 +93,14 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
             }
         } else if( $param instanceof Param\ValueParam ) {
             return new Node\Arg($this->compileValue($param->getValue()));
+        } else if( $param instanceof Param\UnresolvedParam ) {
+            $definition = Utils::resolveGlobalKey($this->definitions, $param->getName(), true);
+            if( !$definition ) {
+                throw new Exception\OutOfBoundsException("Undefined identifier: " . $param->getName() . ' for definition: ' . $this->definition->getKey());
+            }
+            return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
         } else {
-            throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param));
+            throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param) . ' for definition: ' . $this->definition->getKey());
         }
     }
 

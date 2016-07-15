@@ -25,4 +25,19 @@ class BuilderTest extends \PHPUnit_Framework_TestCase
         $dep2 = $builder->build();
         $this->assertFalse($dep2->isFactory());
     }
+
+    public function testSetGlobal()
+    {
+        $builder = new DefinitionBuilder(null, Fixture\NoArguments::class);
+        $dep1 = $builder->build();
+        $this->assertFalse($dep1->isGlobal());
+
+        $builder->setGlobal();
+        $dep2 = $builder->build();
+        $this->assertTrue($dep2->isGlobal());
+
+        $builder->setGlobal(false);
+        $dep3 = $builder->build();
+        $this->assertFalse($dep3->isGlobal());
+    }
 }

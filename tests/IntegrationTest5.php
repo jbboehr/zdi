@@ -462,11 +462,18 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      */
     public function testSimpleClosureInvalidTypeHint(Builder $builder)
     {
-        $this->setExpectedException(DomainException::class);
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function(callable $whoops) {})
             ->build();
-        $builder->build();
+        // Note: exception is thrown at different times for runtime vs compiled
+        $container = $builder->build();
+        $container->get(Fixture\OneObjectArgument::class);
     }
 
     /**
@@ -475,11 +482,18 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      */
     public function testSimpleClosureNoTypeHint(Builder $builder)
     {
-        $this->setExpectedException(DomainException::class);
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function($whoops) {})
             ->build();
-        $builder->build();
+        // Note: exception is thrown at different times for runtime vs compiled
+        $container = $builder->build();
+        $container->get(Fixture\OneObjectArgument::class);
     }
 
     /**
@@ -507,7 +521,12 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      */
     public function testClosureParameterWithoutTypeHint(Builder $builder)
     {
-        $this->setExpectedException('zdi\\Exception\\DomainException');
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function($container) {
                 return new Fixture\NoArguments();
@@ -543,13 +562,20 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
      */
     public function testTooManyClosureParameters(Builder $builder)
     {
-        $this->setExpectedException('zdi\\Exception\\DomainException');
+        if( $builder->precompiled ) {
+            // compilation fails, so can't test precompiled
+            return;
+        }
+
+        $this->setExpectedException(OutOfBoundsException::class);
         $builder->define(Fixture\OneObjectArgument::class)
             ->using(static function(Container $container, $somethingElse) {
                 return new Fixture\NoArguments();
             })
             ->build();
-        $builder->build();
+        // Note: exception is thrown at different times for runtime vs compiled
+        $container = $builder->build();
+        $container->get(Fixture\OneObjectArgument::class);
     }
 
     /**
@@ -646,6 +672,9 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             })
             ->build();
         $builder->blacklist(Fixture\InvalidParam::class);
+        $builder->blacklist(Fixture\InvalidDefinition::class);
+        $builder->blacklist(Fixture\OneScalarArgument::class);
+        $builder->blacklist(Fixture\OneArrayArgument::class);
         $builder->addDirectories(array(__DIR__ . '/Fixture/'));
         $builder->addNamespaces(array('zdi\\Tests\\Fixture\\'));
         $container = $builder->build();
@@ -776,6 +805,67 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             ->build();
         $container = $builder->build();
         $this->assertSame(array(Fixture\DefaultValueArgument::class, 'someKey'), $container->keys());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('str')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->define(Fixture\OneScalarArgument::class)
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get(Fixture\OneScalarArgument::class)->getString());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalAliasedParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('stralias')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->alias('str', 'stralias');
+        $builder->define(Fixture\OneScalarArgument::class)
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get(Fixture\OneScalarArgument::class)->getString());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testGlobalClosureParam(Builder $builder)
+    {
+        $builder->define()
+            ->name('str')
+            ->using(static function () {
+                return 'val';
+            })
+            ->setGlobal()
+            ->build();
+        $builder->define('str2')
+            ->using(static function ($str) {
+                return $str;
+            })
+            ->build();
+        $container = $builder->build();
+        $this->assertSame('val', $container->get('str2'));
     }
 
     protected function defaultAssertions(Container $container, $class, $key = null)

@@ -18,17 +18,17 @@ class ClosureDefinition extends AbstractDefinition
     private $params;
 
     /**
-     * @param string $class
-     * @param boolean $factory
-     * @param null|string $name
      * @param Closure $closure
-     * @param Param[] $params
+     * @param array $params
+     * @param string $class
+     * @param string $name
+     * @param integer $flags
      */
-    public function __construct($class, $factory, $name, Closure $closure, array $params = array())
+    public function __construct(Closure $closure, array $params, $class, $name, $flags)
     {
-        parent::__construct($class, $factory, $name);
         $this->closure = $closure;
         $this->params = $params;
+        parent::__construct($class, $name, $flags);
     }
 
     /**
