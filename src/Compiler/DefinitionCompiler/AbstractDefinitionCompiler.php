@@ -94,7 +94,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
         } else if( $param instanceof Param\ValueParam ) {
             return new Node\Arg($this->compileValue($param->getValue()));
         } else {
-            throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param));
+            throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param) . ' for definition: ' . $this->definition->getKey());
         }
     }
 
