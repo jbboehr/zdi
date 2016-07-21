@@ -6,5 +6,19 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [Unreleased]
 
+## [0.1.3] - 2016-07-21
+
 ### Added
 - Use [container-interop](https://github.com/container-interop/container-interop) interfaces.
+
+## [0.1.2] - 2016-07-14
+
+### Added
+- Ability to declare an identifier as a global parameter, to be used for unresolved parameters of the same name
+
+## 0.1.1 - 2016-07-12
+- Initial release
+
+[Unreleased]: https://github.com/jbboehr/zdi/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/jbboehr/zdi/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/jbboehr/zdi/compare/v0.1.1...v0.1.2
