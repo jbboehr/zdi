@@ -58,6 +58,11 @@ class RuntimeContainer implements Container
             throw new Exception\DomainException('Unsupported definition: ' . Utils::varInfo($definition));
         }
 
+        // Check for injection interfaces
+        if( is_object($object) ) {
+            $this->injectInterfaces($object);
+        }
+
         if( !$definition->isFactory() ) {
             $this->values[$key] = $object;
         }
@@ -175,6 +180,24 @@ class RuntimeContainer implements Container
             return $this->get($definition->getKey());
         } else {
             throw new Exception\DomainException("Unsupported param: " . Utils::varInfo($param));
+        }
+    }
+
+    private function injectInterfaces($object)
+    {
+        $r = new \ReflectionClass($object);
+        foreach( $r->getInterfaceNames() as $name ) {
+            if( !isset($this->definitions[$name]) ) {
+                continue;
+            }
+            $definition = $this->definitions[$name];
+            if( !($definition instanceof Definition\InterfaceDefinition) ) {
+                continue;
+            }
+            $setters = $definition->getSetters();
+            foreach( $setters as $name => $param ) {
+                $object->{$name}($this->makeParam($param));
+            }
         }
     }
 }

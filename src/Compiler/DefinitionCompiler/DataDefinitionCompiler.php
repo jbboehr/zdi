@@ -60,6 +60,9 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         // Compile setters
         $setters = $this->compileSetters($definition->getSetters(), $retVar);
 
+        // Compile interface injection
+        $setters = array_merge($setters, $this->compileInterfaces($retVar));
+
         // Add return statement
         if( $setters ) {
             $method->addStmt(new Node\Expr\Assign(clone $retVar, $construct));
@@ -74,21 +77,4 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         // Return statements
         return $method;
     }
-
-    /**
-     * @param Param[] $setters
-     * @param Node\Expr $var
-     * @return Node\Stmt[]
-     */
-    private function compileSetters(array $setters, $var)
-    {
-        $stmts = array();
-        foreach( $setters as $method => $param ) {
-            $stmts[] = new Node\Expr\MethodCall(clone $var, $method, array(
-                new Node\Arg($this->compileParam($param))
-            ));
-        }
-        return $stmts;
-    }
-
 }
