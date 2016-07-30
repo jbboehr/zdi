@@ -8,21 +8,30 @@ use PhpParser\Node;
 
 class ReturnTranslatorVisitor extends NodeVisitor
 {
-    private $identifier;
+    private $var;
 
-    public function __construct($identifier)
+    private $stmts;
+
+    public function __construct($var, $stmts)
     {
-        $this->identifier = $identifier;
+        $this->var = $var;
+        $this->stmts = $stmts;
     }
 
-    public function enterNode(AstNode $node)
+    public function beforeTraverse(array $nodes)
     {
-        /* if( $node instanceof Node\Expr\Closure ) {
-            throw new \Exception("Cannot nest closures");
-        } else */ if( $node instanceof Node\Stmt\Return_ ) {
-            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->identifier);
-            $newNode = new Node\Stmt\Return_(new Node\Expr\Assign($prop, $node->expr));
-            return $newNode;
+        $newNodes = array();
+        foreach( $nodes as $node ) {
+            if( $node instanceof Node\Stmt\Return_ ) {
+                $newNodes[] = new Node\Expr\Assign(clone $this->var, $node->expr);
+                foreach( $this->stmts as $stmt ) {
+                    $newNodes[] = clone $stmt;
+                }
+                $newNodes[] = new Node\Stmt\Return_(clone $this->var);
+            } else {
+                $newNodes[] = $node;
+            }
         }
+        return $newNodes;
     }
 }

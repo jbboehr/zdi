@@ -888,6 +888,29 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testInterfaceInjectionWithClosure(Builder $builder)
+    {
+        $builder->addInterface(Fixture\NoArgumentsAwareInterface::class);
+        $builder->define(Fixture\NoArguments::class)
+            ->build();
+        $builder->define(Fixture\NoArgumentsAware::class)
+            ->using(static function() {
+                return new Fixture\NoArgumentsAware();
+            })
+            ->build();
+
+        $container = $builder->build();
+        $this->defaultAssertions($container, Fixture\NoArgumentsAware::class);
+        $this->assertSame(
+            $container->get(Fixture\NoArguments::class),
+            $container->get(Fixture\NoArgumentsAware::class)->getNoArguments()
+        );
+    }
+
     protected function defaultAssertions(Container $container, $class, $key = null)
     {
         $containerKey = $key ?: $class;

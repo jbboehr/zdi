@@ -101,10 +101,14 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
     {
         // Ignore factories
         if( $this->definition->isFactory() ) {
-            return $stmts;
+            $var = new Node\Expr\Variable($this->definition->getIdentifier());
+        } else {
+            $var = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->definition->getIdentifier());
         }
 
-        $visitor = new Visitor\ReturnTranslatorVisitor($this->definition->getIdentifier());
+        $setterStmts = $this->compileInterfaces($var);
+
+        $visitor = new Visitor\ReturnTranslatorVisitor($var, $setterStmts);
         $fileTraverser = new NodeTraverser;
         $fileTraverser->addVisitor($visitor);
         return $fileTraverser->traverse($stmts);

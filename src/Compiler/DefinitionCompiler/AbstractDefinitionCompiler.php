@@ -134,6 +134,9 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
     {
         $stmts = array();
         $class = $this->definition->getClass();
+        if( !class_exists($class, true) ) {
+            return array();
+        }
         $r = new \ReflectionClass($class);
         foreach( $r->getInterfaceNames() as $name ) {
             if( !isset($this->definitions[$name]) ) {
