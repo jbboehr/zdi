@@ -43,6 +43,11 @@ class ContainerBuilder
     private $file;
 
     /**
+     * @var string[]
+     */
+    private $interfaces;
+
+    /**
      * @var array
      */
     private $modules = array();
@@ -109,6 +114,16 @@ class ContainerBuilder
         foreach( $directories as $directory ) {
             $this->directories[] = $directory;
         }
+        return $this;
+    }
+
+    /**
+     * @param string $interface
+     * @return $this
+     */
+    public function addInterface($interface)
+    {
+        $this->addDefinition(Definition\InterfaceDefinition::fromString($interface));
         return $this;
     }
 

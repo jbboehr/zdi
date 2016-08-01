@@ -91,6 +91,8 @@ class Compiler
                     new Node\Scalar\String_($alias->getIdentifier()),
                     new Node\Scalar\String_($definition->getKey())
                 );
+            } else if( $definition instanceof Definition\InterfaceDefinition ) {
+                // ignore
             } else {
                 if( !$definition->isFactory() ) {
                     $class->addStmt(

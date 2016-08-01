@@ -113,4 +113,47 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
     {
         return Utils::parserNodeFromValue($value);
     }
+
+    /**
+     * @param Param[] $setters
+     * @param Node\Expr $var
+     * @return Node\Stmt[]
+     */
+    protected function compileSetters(array $setters, $var)
+    {
+        $stmts = array();
+        foreach( $setters as $method => $param ) {
+            $stmts[] = new Node\Expr\MethodCall(clone $var, $method, array(
+                new Node\Arg($this->compileParam($param))
+            ));
+        }
+        return $stmts;
+    }
+
+    protected function compileInterfaces($var)
+    {
+        $stmts = array();
+        $class = $this->definition->getClass();
+        if( !class_exists($class, true) ) {
+            return array();
+        }
+        $r = new \ReflectionClass($class);
+        foreach( $r->getInterfaceNames() as $name ) {
+            if( !isset($this->definitions[$name]) ) {
+                continue;
+            }
+            $definition = $this->definitions[$name];
+            if( !($definition instanceof Definition\InterfaceDefinition) ) {
+                // @codeCoverageIgnoreStart
+                throw new Exception\DomainException('Interface definition not instance of InterfaceDefinition');
+                // @codeCoverageIgnoreEnd
+            }
+            $setters = $definition->getSetters();
+            $stmts = array_merge(
+                $stmts,
+                $this->compileSetters($setters, $var)
+            );
+        }
+        return $stmts;
+    }
 }
