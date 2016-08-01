@@ -6,8 +6,10 @@ use zdi\Container;
 use zdi\Container\ContainerBuilder as Builder;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
+use zdi\InjectionPoint;
 use zdi\Param\NamedParam;
 use zdi\Param\ValueParam;
+use zdi\Tests\Fixture\InjectionPointChild;
 use zdi\Tests\Fixture\NoArguments;
 
 class IntegrationTest5 extends \PHPUnit_Framework_TestCase
@@ -909,6 +911,31 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             $container->get(Fixture\NoArguments::class),
             $container->get(Fixture\NoArgumentsAware::class)->getNoArguments()
         );
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testInjectionPoint(Builder $builder)
+    {
+        $builder->define(Fixture\InjectionPointChild::class)
+            ->factory()
+            ->using(static function (InjectionPoint $point) {
+                return new InjectionPointChild($point->class . '::' . $point->method);
+            })
+            ->build();
+        $builder->addInterface(Fixture\InjectionPointChildAwareInterface::class);
+        $builder->define(Fixture\InjectionPointParent::class)
+            ->build();
+
+        $container = $builder->build();
+
+        $this->defaultAssertions($container, Fixture\InjectionPointParent::class);
+
+        $parent = $container->get(Fixture\InjectionPointParent::class);
+        $this->assertSame(Fixture\InjectionPointParent::class . '::' . '__construct', $parent->getStr1());
+        $this->assertSame(Fixture\InjectionPointParent::class . '::' . 'setInjectionPointChild', $parent->getStr2());
     }
 
     protected function defaultAssertions(Container $container, $class, $key = null)
