@@ -6,6 +6,12 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [Unreleased]
 
+## [0.1.4] - 2016-08-01
+
+### Added
+- Interface injection support
+- Injection point support
+
 ## [0.1.3] - 2016-07-21
 
 ### Added
@@ -19,6 +25,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 ## 0.1.1 - 2016-07-12
 - Initial release
 
-[Unreleased]: https://github.com/jbboehr/zdi/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/jbboehr/zdi/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/jbboehr/zdi/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/jbboehr/zdi/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/jbboehr/zdi/compare/v0.1.1...v0.1.2
