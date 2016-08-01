@@ -9,6 +9,7 @@ use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
 use zdi\Definition\DataDefinition;
 use zdi\Exception;
+use zdi\InjectionPoint;
 use zdi\Param;
 use zdi\Tests\Fixture\ContainerArgument;
 use zdi\Utils;
@@ -50,10 +51,15 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
             $retVar = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
         }
 
+        // Make injection point
+        $ip = new InjectionPoint();
+        $ip->class = $definition->getClass();
+        $ip->method = '__construct';
+
         // Compile constructor
         $paramNodes = array();
         foreach( $definition->getParams() as $position => $param ) {
-            $paramNodes[] = $this->compileParam($param);
+            $paramNodes[] = $this->compileParam($param, $ip);
         }
         $construct = new Node\Expr\New_(new Node\Name\FullyQualified($definition->getClass()), $paramNodes);
 

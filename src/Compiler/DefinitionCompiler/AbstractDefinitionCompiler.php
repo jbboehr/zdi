@@ -9,6 +9,7 @@ use zdi\Compiler\DefinitionCompiler;
 use zdi\Container;
 use zdi\Definition;
 use zdi\Exception;
+use zdi\InjectionPoint;
 use zdi\Param;
 use zdi\Utils;
 
@@ -64,10 +65,11 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
 
     /**
      * @param Param $param
+     * @param InjectionPoint $ip
      * @return Node\Expr
      * @throws Exception\DomainException
      */
-    protected function compileParam(Param $param)
+    protected function compileParam(Param $param, InjectionPoint $ip)
     {
         if( $param instanceof Param\ClassParam ) {
             $key = $param->getClass();
@@ -78,14 +80,14 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
             // Get definition
             $definition = Utils::resolveAliasKey($this->definitions, $key, $param->isOptional());
             if( $definition ) {
-                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+                return $this->compileParamInjectionPoint($definition, $ip);
             } else {
                 return new Node\Expr\ConstFetch(new Node\Name('null'));
             }
         } else if( $param instanceof Param\NamedParam ) {
             $definition = Utils::resolveAliasKey($this->definitions, $param->getName(), true);
             if( $definition ) {
-                return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+                return $this->compileParamInjectionPoint($definition, $ip);
             } else {
                 return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), 'get', array(
                     new Node\Arg(new Node\Scalar\String_($param->getName()))
@@ -95,13 +97,39 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
             return new Node\Arg($this->compileValue($param->getValue()));
         } else if( $param instanceof Param\UnresolvedParam ) {
             $definition = Utils::resolveGlobalKey($this->definitions, $param->getName(), true);
-            if( !$definition ) {
+            if (!$definition) {
                 throw new Exception\OutOfBoundsException("Undefined identifier: " . $param->getName() . ' for definition: ' . $this->definition->getKey());
             }
-            return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier());
+            return $this->compileParamInjectionPoint($definition, $ip);
+        } else if( $param instanceof Param\InjectionPointParam ) {
+
+            return new Node\Expr\ConstFetch(new Node\Name('WHOOPSIES'));
         } else {
             throw new Exception\DomainException('Unsupported parameter: ' . Utils::varInfo($param) . ' for definition: ' . $this->definition->getKey());
         }
+    }
+
+    /**
+     * @param Definition $definition
+     * @param InjectionPoint $ip
+     * @return Node\Expr\MethodCall
+     */
+    private function compileParamInjectionPoint(Definition $definition, InjectionPoint $ip)
+    {
+        $hasInjectionPoint = false;
+        if( $definition instanceof Definition\ClosureDefinition ) {
+            $hasInjectionPoint = $definition->hasInjectionPointParam();
+        } else if( $definition instanceof Definition\DataDefinition ) {
+            $hasInjectionPoint = $definition->hasInjectionPointParam();
+        }
+        $args = array();
+        if( $hasInjectionPoint ) {
+            $args[] = new Node\Arg(new Node\Scalar\String_($ip->class));
+            if( $ip->method ) {
+                $args[] = new Node\Arg(new Node\Scalar\String_($ip->method));
+            }
+        }
+        return new Node\Expr\MethodCall(new Node\Expr\Variable('this'), $definition->getIdentifier(), $args);
     }
 
     /**
@@ -121,12 +149,19 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      */
     protected function compileSetters(array $setters, $var)
     {
+        // Make injection point
+        $ip = new InjectionPoint();
+        $ip->class = $this->definition->getClass();
+
+        // Compile setters
         $stmts = array();
         foreach( $setters as $method => $param ) {
+            $ip->method = $method;
             $stmts[] = new Node\Expr\MethodCall(clone $var, $method, array(
-                new Node\Arg($this->compileParam($param))
+                new Node\Arg($this->compileParam($param, $ip))
             ));
         }
+
         return $stmts;
     }
 

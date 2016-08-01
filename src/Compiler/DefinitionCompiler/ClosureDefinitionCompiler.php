@@ -19,6 +19,7 @@ use zdi\Compiler\DefinitionCompiler;
 use zdi\Definition;
 use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
+use zdi\InjectionPoint;
 use zdi\Param;
 use zdi\Utils;
 
@@ -43,6 +44,18 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             ->setDocComment('/**
                               * @return ' . $definition->getTypeHint() . '
                               */');
+
+        // Add parameter for injection point
+        if( $definition->hasInjectionPointParam() ) {
+            $method->addParam(
+                $this->builderFactory->param('ipClass')
+                    ->setDefault(null)
+            );
+            $method->addParam(
+                $this->builderFactory->param('ipMethod')
+                    ->setDefault(null)
+            );
+        }
 
         // Prepare instance check
         if( !$definition->isFactory() ) {
@@ -76,10 +89,15 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             $reflectionParameter = $reflectionParameters[$position];
             if( $param instanceof Param\ClassParam && $param->getClass() === Container::class ) {
                 $map[$reflectionParameter->getName()] = new Node\Expr\Variable('this');
+            } else if( $param instanceof Param\InjectionPointParam ) {
+                $ip = new InjectionPoint();
+                $map[$reflectionParameter->getName()] = new InjectionPoint();
             } else {
+                $ip = new InjectionPoint();
+                $ip->class = $this->definition->getClass();
                 $prepend[] = new Node\Expr\Assign(
                     new Node\Expr\Variable($reflectionParameter->getName()),
-                    $this->compileParam($param)
+                    $this->compileParam($param, $ip)
                 );
             }
         }

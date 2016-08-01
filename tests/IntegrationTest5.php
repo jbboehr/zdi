@@ -4,6 +4,7 @@ namespace zdi\Tests;
 
 use zdi\Container;
 use zdi\Container\ContainerBuilder as Builder;
+use zdi\Exception;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
 use zdi\InjectionPoint;
@@ -677,6 +678,8 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         $builder->blacklist(Fixture\InvalidDefinition::class);
         $builder->blacklist(Fixture\OneScalarArgument::class);
         $builder->blacklist(Fixture\OneArrayArgument::class);
+        $builder->blacklist(Fixture\InjectionPointChild::class);
+        $builder->blacklist(Fixture\InjectionPointParent::class);
         $builder->addDirectories(array(__DIR__ . '/Fixture/'));
         $builder->addNamespaces(array('zdi\\Tests\\Fixture\\'));
         $container = $builder->build();
@@ -936,6 +939,26 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         $parent = $container->get(Fixture\InjectionPointParent::class);
         $this->assertSame(Fixture\InjectionPointParent::class . '::' . '__construct', $parent->getStr1());
         $this->assertSame(Fixture\InjectionPointParent::class . '::' . 'setInjectionPointChild', $parent->getStr2());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testInjectionPointWithoutFactoryThrowsException(Builder $builder)
+    {
+        $this->setExpectedException(Exception\DomainException::class);
+
+        $builder->define(Fixture\InjectionPointChild::class)
+            ->using(static function (InjectionPoint $point) {
+                return new InjectionPointChild($point->class . '::' . $point->method);
+            })
+            ->build();
+        $builder->addInterface(Fixture\InjectionPointChildAwareInterface::class);
+        $builder->define(Fixture\InjectionPointParent::class)
+            ->build();
+
+        $container = $builder->build();
     }
 
     protected function defaultAssertions(Container $container, $class, $key = null)
