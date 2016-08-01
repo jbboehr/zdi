@@ -3,6 +3,7 @@
 namespace zdi\Definition;
 
 use Closure;
+use zdi\Exception;
 use zdi\Param;
 
 class ClosureDefinition extends AbstractDefinition
@@ -28,7 +29,12 @@ class ClosureDefinition extends AbstractDefinition
     {
         $this->closure = $closure;
         $this->params = $params;
+
         parent::__construct($class, $name, $flags);
+
+        if( $this->hasInjectionPointParam() && !$this->isFactory() ) {
+            throw new Exception\DomainException('Definition with injection point must be marked as factory');
+        }
     }
 
     /**
@@ -45,5 +51,18 @@ class ClosureDefinition extends AbstractDefinition
     public function getParams()
     {
         return $this->params;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function hasInjectionPointParam()
+    {
+        foreach( $this->params as $param ) {
+            if( $param instanceof Param\InjectionPointParam ) {
+                return true;
+            }
+        }
+        return false;
     }
 }

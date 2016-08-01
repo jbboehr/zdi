@@ -9,6 +9,7 @@ use ReflectionFunction;
 use zdi\Container;
 use zdi\Definition;
 use zdi\Exception;
+use zdi\InjectionPoint;
 use zdi\Param;
 use zdi\Utils;
 
@@ -23,6 +24,8 @@ class RuntimeContainer implements Container
      * @var array
      */
     private $values = array();
+
+    private $stack = array();
 
     /**
      * @param array $values
@@ -47,27 +50,37 @@ class RuntimeContainer implements Container
         // Lookup definition
         $definition = Utils::resolveAliasKey($this->definitions, $key);
 
-        // Build the parameters
-        if( $definition instanceof Definition\DataDefinition ) {
-            $object = $this->makeDefault($definition);
-        } else if( $definition instanceof Definition\ClosureDefinition ) {
-            $object = $this->makeClosure($definition);
-        } else if( $definition instanceof Definition\ClassDefinition ) {
-            $object = $this->makeProvider($definition);
-        } else {
-            throw new Exception\DomainException('Unsupported definition: ' . Utils::varInfo($definition));
+        // Make injection point
+        $ip = new InjectionPoint();
+        $ip->class = $definition->getClass();
+        array_push($this->stack, $ip);
+
+        try {
+            // Build the parameters
+            if ($definition instanceof Definition\DataDefinition) {
+                $object = $this->makeDefault($definition, $ip);
+            } else if ($definition instanceof Definition\ClosureDefinition) {
+                $object = $this->makeClosure($definition, $ip);
+            } else if ($definition instanceof Definition\ClassDefinition) {
+                $object = $this->makeProvider($definition, $ip);
+            } else {
+                throw new Exception\DomainException('Unsupported definition: ' . Utils::varInfo($definition));
+            }
+
+            // Check for injection interfaces
+            if (is_object($object)) {
+                $this->injectInterfaces($object, $ip);
+            }
+
+            if (!$definition->isFactory()) {
+                $this->values[$key] = $object;
+            }
+
+            return $object;
+        } finally {
+            array_pop($this->stack);
         }
 
-        // Check for injection interfaces
-        if( is_object($object) ) {
-            $this->injectInterfaces($object);
-        }
-
-        if( !$definition->isFactory() ) {
-            $this->values[$key] = $object;
-        }
-
-        return $object;
     }
 
     /**
@@ -122,8 +135,10 @@ class RuntimeContainer implements Container
         unset($this->values[$offset]);
     }
 
-    private function makeDefault(Definition\DataDefinition $definition)
+    private function makeDefault(Definition\DataDefinition $definition, InjectionPoint $ip)
     {
+        $ip->method = '__construct';
+
         $class = $definition->getClass();
 
         $params = array();
@@ -135,18 +150,22 @@ class RuntimeContainer implements Container
         $reflectionClass = new ReflectionClass($class);
         $object = $reflectionClass->newInstanceArgs($params);
 
-        // Do setters
+        // Setters
         foreach( $definition->getSetters() as $name => $param ) {
+            $ip->method = $name;
             $object->{$name}($this->makeParam($param));
         }
 
         return $object;
     }
 
-    private function makeClosure(Definition\ClosureDefinition $definition)
+
+    private function makeClosure(Definition\ClosureDefinition $definition, InjectionPoint $ip)
     {
+        $ip->method = null;
+
         $params = array();
-        foreach( $definition->getParams() as $position => $param ) {
+        foreach ($definition->getParams() as $position => $param) {
             $params[$position] = $this->makeParam($param);
         }
 
@@ -155,7 +174,7 @@ class RuntimeContainer implements Container
         return $reflectionFunction->invokeArgs($params);
     }
 
-    private function makeProvider(Definition\ClassDefinition $definition)
+    private function makeProvider(Definition\ClassDefinition $definition, InjectionPoint $ip)
     {
         $provider = $this->get($definition->getProvider());
         return $provider->get();
@@ -178,12 +197,18 @@ class RuntimeContainer implements Container
         } else if( $param instanceof Param\UnresolvedParam ) {
             $definition = Utils::resolveGlobalKey($this->definitions, $param->getName());
             return $this->get($definition->getKey());
+        } else if( $param instanceof Param\InjectionPointParam ) {
+            if( count($this->stack) < 2 ) {
+                return new InjectionPoint();
+            } else {
+                return $this->stack[count($this->stack) - 2];
+            }
         } else {
             throw new Exception\DomainException("Unsupported param: " . Utils::varInfo($param));
         }
     }
 
-    private function injectInterfaces($object)
+    private function injectInterfaces($object, InjectionPoint $ip)
     {
         $r = new \ReflectionClass($object);
         foreach( $r->getInterfaceNames() as $name ) {
@@ -196,6 +221,7 @@ class RuntimeContainer implements Container
             }
             $setters = $definition->getSetters();
             foreach( $setters as $name => $param ) {
+                $ip->method = $name;
                 $object->{$name}($this->makeParam($param));
             }
         }

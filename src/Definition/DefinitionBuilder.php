@@ -12,6 +12,7 @@ use zdi\Container;
 use zdi\Container\ContainerBuilder;
 use zdi\Definition;
 use zdi\Exception;
+use zdi\InjectionPoint;
 use zdi\Param;
 use zdi\Utils;
 
@@ -221,7 +222,11 @@ class DefinitionBuilder
             } else if( isset($this->params[$position]) ) {
                 $result[$position] = $this->convertParam($this->params[$position]);
             } else if( $class ) {
-                $result[$position] = new Param\ClassParam($class->name, $parameter->isOptional());
+                if( $class->name === InjectionPoint::class) {
+                    $result[$position] = new Param\InjectionPointParam();
+                } else {
+                    $result[$position] = new Param\ClassParam($class->name, $parameter->isOptional());
+                }
             } else if( $parameter->isDefaultValueAvailable() ) {
                 $result[$position] = new Param\ValueParam($parameter->getDefaultValue());
             } else {
