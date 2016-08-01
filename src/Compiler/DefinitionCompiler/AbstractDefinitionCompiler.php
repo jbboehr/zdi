@@ -179,9 +179,9 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
             }
             $definition = $this->definitions[$name];
             if( !($definition instanceof Definition\InterfaceDefinition) ) {
-                // @codeCoverageIgnoreStart
-                throw new Exception\DomainException('Interface definition not instance of InterfaceDefinition');
-                // @codeCoverageIgnoreEnd
+                // Ignore aliased interfaces for interface injection
+                continue;
+                // throw new Exception\DomainException('Interface definition not instance of InterfaceDefinition');
             }
             $setters = $definition->getSetters();
             $stmts = array_merge(
