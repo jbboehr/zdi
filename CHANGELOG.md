@@ -6,6 +6,9 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [Unreleased]
 
+### Added
+- `addNamespace` and `addNamespaces` accept a callable which is passed the DefinitionBuilder for each matched class
+
 ## [0.1.4] - 2016-08-01
 
 ### Added

@@ -4,6 +4,7 @@ namespace zdi\Tests;
 
 use zdi\Container;
 use zdi\Container\ContainerBuilder as Builder;
+use zdi\Definition\DefinitionBuilder;
 use zdi\Exception;
 use zdi\Exception\DomainException;
 use zdi\Exception\OutOfBoundsException;
@@ -687,6 +688,37 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
         $this->defaultAssertions($container, Fixture\NoArguments::class);
         $this->defaultAssertions($container, Fixture\OneObjectArgument::class);
         $this->defaultAssertions($container, Fixture\OneOptionalObjectArgument::class);
+
+        $this->assertFalse($container->has(Fixture\InvalidParam::class));
+        $this->assertSame('baz', $container->get(Fixture\OneScalarArgument::class)->getString());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testScanWithCallable(Builder $builder)
+    {
+        $builder->define(Fixture\OneScalarArgument::class)
+            ->using(static function () {
+                return new Fixture\OneScalarArgument('baz');
+            })
+            ->build();
+        $builder->blacklist(Fixture\InvalidParam::class);
+        $builder->blacklist(Fixture\InvalidDefinition::class);
+        $builder->blacklist(Fixture\OneScalarArgument::class);
+        $builder->blacklist(Fixture\OneArrayArgument::class);
+        $builder->blacklist(Fixture\InjectionPointChild::class);
+        $builder->blacklist(Fixture\InjectionPointParent::class);
+        $builder->addDirectories(array(__DIR__ . '/Fixture/'));
+        $builder->addNamespaces(array('zdi\\Tests\\Fixture\\'), function (DefinitionBuilder $builder) {
+            $builder->factory();
+        });
+        $container = $builder->build();
+
+        $this->defaultFactoryAssertions($container, Fixture\NoArguments::class);
+        $this->defaultFactoryAssertions($container, Fixture\OneObjectArgument::class);
+        $this->defaultFactoryAssertions($container, Fixture\OneOptionalObjectArgument::class);
 
         $this->assertFalse($container->has(Fixture\InvalidParam::class));
         $this->assertSame('baz', $container->get(Fixture\OneScalarArgument::class)->getString());

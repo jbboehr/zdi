@@ -141,9 +141,9 @@ class ContainerBuilder
      * @param string $namespace
      * @return $this
      */
-    public function addNamespace($namespace)
+    public function addNamespace($namespace, callable $fn = null)
     {
-        $this->namespaces[] = $namespace;
+        $this->namespaces[$namespace] = $fn;
         return $this;
     }
 
@@ -151,10 +151,10 @@ class ContainerBuilder
      * @param string[] $namespaces
      * @return $this
      */
-    public function addNamespaces(array $namespaces)
+    public function addNamespaces(array $namespaces, callable $fn = null)
     {
         foreach( $namespaces as $namespace ) {
-            $this->namespaces[] = $namespace;
+            $this->namespaces[$namespace] = $fn;
         }
         return $this;
     }
@@ -386,18 +386,24 @@ class ContainerBuilder
     {
         foreach( get_declared_classes() as $class ) {
             $match = false;
-            foreach( $this->namespaces as $namespace ) {
+            $matchFn = null;
+            foreach( $this->namespaces as $namespace => $fn ) {
                 if( isset($this->blacklist[$class]) || isset($this->definitions[$class]) ) {
                     continue 2;
                 }
                 if( strpos($class, $namespace) === 0 ) {
                     $match = true;
+                    $matchFn = $fn;
                     break;
                 }
             }
             if( $match ) {
                 try {
-                    $this->define($class)->build();
+                    $builder = $this->define($class);
+                    if( $matchFn ) {
+                        $matchFn($builder);
+                    }
+                    $builder->build();
                 } catch ( \zdi\Exception $e ) {
                     // @todo fixme
                 }
