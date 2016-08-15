@@ -9,6 +9,10 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 ### Added
 - `addNamespace` and `addNamespaces` accept a callable which is passed the DefinitionBuilder for each matched class
 
+### Fixed
+- `NodeVisitor::beforeTraverse` does not recurse, causing interface injection to be ignored and factory value to not be
+assigned in closures with `return`s not at the top level.
+
 ## [0.1.4] - 2016-08-01
 
 ### Added
