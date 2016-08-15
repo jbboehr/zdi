@@ -18,20 +18,16 @@ class ReturnTranslatorVisitor extends NodeVisitor
         $this->stmts = $stmts;
     }
 
-    public function beforeTraverse(array $nodes)
+    public function leaveNode(Node $node)
     {
-        $newNodes = array();
-        foreach( $nodes as $node ) {
-            if( $node instanceof Node\Stmt\Return_ ) {
-                $newNodes[] = new Node\Expr\Assign(clone $this->var, $node->expr);
-                foreach( $this->stmts as $stmt ) {
-                    $newNodes[] = clone $stmt;
-                }
-                $newNodes[] = new Node\Stmt\Return_(clone $this->var);
-            } else {
-                $newNodes[] = $node;
+        if( $node instanceof Node\Stmt\Return_ ) {
+            $newNodes = array();
+            $newNodes[] = new Node\Expr\Assign(clone $this->var, $node->expr);
+            foreach( $this->stmts as $stmt ) {
+                $newNodes[] = clone $stmt;
             }
+            $newNodes[] = new Node\Stmt\Return_(clone $this->var);
+            return $newNodes;
         }
-        return $newNodes;
     }
 }
