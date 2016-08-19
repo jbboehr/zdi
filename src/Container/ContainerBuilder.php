@@ -256,6 +256,7 @@ class ContainerBuilder
             $this->scanDirectories();
             $this->executeModules();
             $this->scanNamespaces();
+            ksort($this->definitions);
         }
 
         if( $this->className || $this->file ) {

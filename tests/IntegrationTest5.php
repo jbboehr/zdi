@@ -841,7 +841,7 @@ class IntegrationTest5 extends \PHPUnit_Framework_TestCase
             })
             ->build();
         $container = $builder->build();
-        $this->assertSame(array(Fixture\DefaultValueArgument::class, 'someKey'), $container->keys());
+        $this->assertSame(array('someKey', Fixture\DefaultValueArgument::class), $container->keys());
     }
 
     /**
