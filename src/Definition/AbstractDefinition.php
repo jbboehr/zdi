@@ -99,7 +99,7 @@ abstract class AbstractDefinition implements Definition
         if( $class ) {
             return '\\' . $class;
         } else {
-            return 'scalar';
+            return 'mixed';
         }
     }
 }
