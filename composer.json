@@ -9,6 +9,7 @@
             "zdi\\Tests\\": "tests"
         }
     },
+    "description": "Dependency injection container compiler",
     "license": "BSD-2-Clause",
     "name": "jbboehr/zdi",
     "require": {

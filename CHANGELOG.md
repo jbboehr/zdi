@@ -6,6 +6,9 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [Unreleased]
 
+### Fixed
+- Missing description in composer.json
+
 ## [0.1.5] - 2016-08-22
 
 ### Added
