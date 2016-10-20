@@ -6,6 +6,8 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [Unreleased]
 
+## [0.1.6] - 2016-10-19
+
 ### Fixed
 - Missing description in composer.json
 
@@ -41,7 +43,8 @@ assigned in closures with `return`s not at the top level.
 ## 0.1.1 - 2016-07-12
 - Initial release
 
-[Unreleased]: https://github.com/jbboehr/zdi/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/jbboehr/zdi/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/jbboehr/zdi/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/jbboehr/zdi/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/jbboehr/zdi/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/jbboehr/zdi/compare/v0.1.2...v0.1.3
