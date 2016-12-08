@@ -12,6 +12,7 @@
     "license": "BSD-2-Clause",
     "name": "jbboehr/zdi",
     "require": {
+        "php": ">= 7.0",
         "container-interop/container-interop": "~1.1",
         "jeremeamia/superclosure": "~2.2",
         "nikic/php-parser": "~2.1"

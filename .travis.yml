@@ -9,6 +9,7 @@ branches:
   only:
     - master
     - travis
+    - 0.2.x
 
 sudo: false
 
