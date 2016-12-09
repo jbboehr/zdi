@@ -181,7 +181,15 @@ class DefinitionBuilder
             $reflectionFunction = new ReflectionFunction($closure);
             $this->convertReturnType($reflectionFunction);
             $params = $this->convertParameters($reflectionFunction->getParameters());
-            $definition = new ClosureDefinition($closure, $params, $this->class, $this->name, $this->flags);
+            $setters = array();
+            if( $this->class ) {
+                $reflectionClass = new ReflectionClass($this->class);
+                if ($this->scanSetters) {
+                    $this->scanSetters($reflectionClass);
+                }
+                $setters = $this->convertSetters($reflectionClass);
+            }
+            $definition = new ClosureDefinition($closure, $params, $setters, $this->class, $this->name, $this->flags);
         } else if( $this->class ) {
             $reflectionClass = new ReflectionClass($this->class);
             if( $reflectionClass->isAbstract() || $reflectionClass->isInterface() ) {
@@ -319,7 +327,8 @@ class DefinitionBuilder
             return;
         }
         $returnType = $reflectionFunction->getReturnType();
-        if( !$returnType ) {
+        // Ignore non-class return types for now
+        if( !$returnType || $returnType->isBuiltin() ) {
             return;
         }
         $returnTypeStr = (string) $returnType;

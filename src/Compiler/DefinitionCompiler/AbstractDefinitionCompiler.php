@@ -149,25 +149,22 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      */
     protected function compileSetters(array $setters, $var)
     {
-        // Make injection point
-        $ip = new InjectionPoint();
-        $ip->class = $this->definition->getClass();
+        $stmtByMethod = array_merge(
+            $this->compileSettersRaw($setters, $var),
+            $this->compileInterfaces($var)
+        );
 
-        // Compile setters
         $stmts = array();
-        foreach( $setters as $method => $param ) {
-            $ip->method = $method;
-            $stmts[] = new Node\Expr\MethodCall(clone $var, $method, array(
-                new Node\Arg($this->compileParam($param, $ip))
-            ));
+        foreach( $stmtByMethod as $stmt ) {
+            $stmts[] = $stmt;
         }
 
         return $stmts;
     }
 
-    protected function compileInterfaces($var)
+    private function compileInterfaces($var)
     {
-        $stmts = array();
+        $stmtByMethod = array();
         $class = $this->definition->getClass();
         if( !class_exists($class, true) ) {
             return array();
@@ -184,11 +181,27 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
                 // throw new Exception\DomainException('Interface definition not instance of InterfaceDefinition');
             }
             $setters = $definition->getSetters();
-            $stmts = array_merge(
-                $stmts,
-                $this->compileSetters($setters, $var)
-            );
+            $stmtByMethod = array_merge($stmtByMethod, $this->compileSettersRaw($setters, $var));
         }
-        return $stmts;
+        return $stmtByMethod;
+    }
+
+    private function compileSettersRaw(array $setters, $var)
+    {
+        $stmtByMethod = array();
+
+        // Make injection point
+        $ip = new InjectionPoint();
+        $ip->class = $this->definition->getClass();
+
+        // Compile setters
+        foreach( $setters as $method => $param ) {
+            $ip->method = $method;
+            $stmtByMethod[$method] = new Node\Expr\MethodCall(clone $var, $method, array(
+                new Node\Arg($this->compileParam($param, $ip))
+            ));
+        }
+
+        return $stmtByMethod;
     }
 }

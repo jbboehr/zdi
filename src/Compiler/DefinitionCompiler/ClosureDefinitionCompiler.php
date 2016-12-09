@@ -124,7 +124,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
             $var = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->definition->getIdentifier());
         }
 
-        $setterStmts = $this->compileInterfaces($var);
+        $setterStmts = $this->compileSetters($this->definition->getSetters(), $var);
 
         $visitor = new Visitor\ReturnTranslatorVisitor($var, $setterStmts);
         $fileTraverser = new NodeTraverser;

@@ -19,16 +19,22 @@ class ClosureDefinition extends AbstractDefinition
     private $params;
 
     /**
+     * @var array
+     */
+    private $setters;
+
+    /**
      * @param Closure $closure
      * @param array $params
      * @param string $class
      * @param string $name
      * @param integer $flags
      */
-    public function __construct(Closure $closure, array $params, $class, $name, $flags)
+    public function __construct(Closure $closure, array $params, array $setters, $class, $name, $flags)
     {
         $this->closure = $closure;
         $this->params = $params;
+        $this->setters = $setters;
 
         parent::__construct($class, $name, $flags);
 
@@ -51,6 +57,14 @@ class ClosureDefinition extends AbstractDefinition
     public function getParams()
     {
         return $this->params;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSetters()
+    {
+        return $this->setters;
     }
 
     /**

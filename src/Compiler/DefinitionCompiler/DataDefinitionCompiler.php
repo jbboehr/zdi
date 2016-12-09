@@ -67,7 +67,7 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         $setters = $this->compileSetters($definition->getSetters(), $retVar);
 
         // Compile interface injection
-        $setters = array_merge($setters, $this->compileInterfaces($retVar));
+        //$setters = array_merge($setters, $this->compileInterfaces($retVar));
 
         // Add return statement
         if( $setters ) {

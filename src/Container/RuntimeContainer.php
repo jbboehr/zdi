@@ -171,7 +171,16 @@ class RuntimeContainer implements Container
 
         $closure = $definition->getClosure();
         $reflectionFunction = new \ReflectionFunction($closure);
-        return $reflectionFunction->invokeArgs($params);
+        $object = $reflectionFunction->invokeArgs($params);
+
+        if( $object ) {
+            foreach( $definition->getSetters() as $name => $param ) {
+                $ip->method = $name;
+                $object->{$name}($this->makeParam($param));
+            }
+        }
+
+        return $object;
     }
 
     private function makeProvider(Definition\ClassDefinition $definition, InjectionPoint $ip)

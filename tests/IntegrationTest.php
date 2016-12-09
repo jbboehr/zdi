@@ -898,7 +898,8 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
             })
             ->setGlobal()
             ->build();
-        $builder->define('str2')
+        $builder->define()
+            ->name('str2')
             ->using(static function ($str) {
                 return $str;
             })
@@ -1017,6 +1018,25 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      * @param Builder $builder
      * @dataProvider containerBuilderProvider
      */
+    public function testClosureWithSetter(Builder $builder)
+    {
+        $builder->define(Fixture\NoArguments::class)
+            ->build();
+        $builder->define()
+            ->setter('setObject', Fixture\NoArguments::class)
+            ->using(static function () : Fixture\OneSetter {
+                return new Fixture\OneSetter();
+            })
+            ->build();
+        $container = $builder->build();
+
+        $this->assertInstanceOf(Fixture\NoArguments::class, $container->get(Fixture\OneSetter::class)->getObject());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
     public function testClosureScalarReturnTypeDeclaration(Builder $builder)
     {
         $builder->define()
@@ -1040,6 +1060,25 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
         $builder->define(Fixture\NoArguments::class)
             ->build();
         $builder->define(Fixture\OneSetter::class)
+            ->build();
+        $container = $builder->build();
+
+        $this->assertInstanceOf(Fixture\NoArguments::class, $container->get(Fixture\OneSetter::class)->getObject());
+    }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testSetterScannerWithClosure(Builder $builder)
+    {
+        $builder->setEnableSetterScan(true);
+        $builder->define(Fixture\NoArguments::class)
+            ->build();
+        $builder->define()
+            ->using(static function () : Fixture\OneSetter {
+                return new Fixture\OneSetter();
+            })
             ->build();
         $container = $builder->build();
 
