@@ -2,6 +2,7 @@
 
 namespace zdi\Compiler\DefinitionCompiler;
 
+use PhpParser\BuilderAbstract;
 use PhpParser\Node;
 
 use zdi\Container;
@@ -21,7 +22,7 @@ class ClassDefinitionCompiler extends AbstractDefinitionCompiler
     /**
      * @inheritdoc
      */
-    public function compile()
+    public function compile() : BuilderAbstract
     {
         $definition = $this->definition;
         $identifier = $definition->getIdentifier();

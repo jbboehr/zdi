@@ -22,7 +22,7 @@ class ClassParam implements Param
      * @param string $class
      * @param boolean $isOptional
      */
-    public function __construct($class, $isOptional = false)
+    public function __construct(string $class, bool $isOptional = false)
     {
         $this->class = $class;
         $this->isOptional = $isOptional;
@@ -31,7 +31,7 @@ class ClassParam implements Param
     /**
      * @return string
      */
-    public function getClass()
+    public function getClass() : string
     {
         return $this->class;
     }
@@ -39,7 +39,7 @@ class ClassParam implements Param
     /**
      * @return boolean
      */
-    public function isOptional()
+    public function isOptional() : bool
     {
         return $this->isOptional;
     }

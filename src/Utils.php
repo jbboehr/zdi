@@ -10,7 +10,7 @@ class Utils
      * @param string $class
      * @return string
      */
-    static public function classToIdentifier($class)
+    static public function classToIdentifier($class) : string
     {
         if( static::isValidIdentifier($class) ) {
             return $class;
@@ -23,7 +23,7 @@ class Utils
      * @param string $className
      * @return string[]
      */
-    static public function extractNamespace($className)
+    static public function extractNamespace($className) : array
     {
         $pos = strrpos($className, '\\');
         if( false === $pos ) {
@@ -40,7 +40,7 @@ class Utils
      * @param string $class
      * @return boolean
      */
-    static public function isValidIdentifier($class)
+    static public function isValidIdentifier($class) : bool
     {
         return (bool) preg_match('/^[a-z][a-z0-9_]+$/i', $class);
     }
@@ -49,7 +49,7 @@ class Utils
      * @param mixed $value
      * @return Node\Expr
      */
-    static public function parserNodeFromValue($value)
+    static public function parserNodeFromValue($value) : Node\Expr
     {
         if( is_array($value) ) {
             $items = array();
@@ -140,7 +140,7 @@ class Utils
      * @param mixed $var
      * @return string
      */
-    static public function varInfo($var)
+    static public function varInfo($var) : string
     {
         if( is_object($var) ) {
             return get_class($var);

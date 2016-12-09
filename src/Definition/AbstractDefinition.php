@@ -45,7 +45,7 @@ abstract class AbstractDefinition implements Definition
     /**
      * @return boolean
      */
-    public function isFactory()
+    public function isFactory() : bool
     {
         return (boolean) ($this->flags & Definition::FACTORY);
     }
@@ -53,7 +53,7 @@ abstract class AbstractDefinition implements Definition
     /**
      * @return boolean
      */
-    public function isGlobal()
+    public function isGlobal() : bool
     {
         return (boolean) ($this->flags & Definition::IS_GLOBAL);
     }
@@ -69,7 +69,7 @@ abstract class AbstractDefinition implements Definition
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey() : string
     {
         $name = $this->getName();
         $class = $this->getClass();
@@ -79,7 +79,7 @@ abstract class AbstractDefinition implements Definition
     /**
      * @return string
      */
-    public function getIdentifier()
+    public function getIdentifier() : string
     {
         $name = $this->getName();
         $class = $this->getClass();
@@ -93,7 +93,7 @@ abstract class AbstractDefinition implements Definition
     /**
      * @return string
      */
-    public function getTypeHint()
+    public function getTypeHint() : string
     {
         $class = $this->getClass();
         if( $class ) {

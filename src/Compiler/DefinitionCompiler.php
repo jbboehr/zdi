@@ -9,5 +9,5 @@ interface DefinitionCompiler
     /**
      * @return BuilderAbstract
      */
-    public function compile();
+    public function compile() : BuilderAbstract;
 }

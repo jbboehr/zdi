@@ -24,7 +24,7 @@ class ClassDefinition extends AbstractDefinition
     /**
      * @return string
      */
-    public function getProvider()
+    public function getProvider() : string
     {
         return $this->provider;
     }

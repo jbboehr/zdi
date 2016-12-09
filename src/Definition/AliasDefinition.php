@@ -13,7 +13,7 @@ class AliasDefinition extends AbstractDefinition
      * @param $class
      * @param bool $alias
      */
-    public function __construct($class, $alias)
+    public function __construct(string $class, string $alias)
     {
         parent::__construct($class, false);
         $this->alias = $alias;
@@ -22,7 +22,7 @@ class AliasDefinition extends AbstractDefinition
     /**
      * @return string
      */
-    public function getAlias()
+    public function getAlias() : string
     {
         return $this->alias;
     }

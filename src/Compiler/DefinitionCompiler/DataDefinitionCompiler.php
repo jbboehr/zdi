@@ -2,17 +2,11 @@
 
 namespace zdi\Compiler\DefinitionCompiler;
 
+use PhpParser\BuilderAbstract;
 use PhpParser\Node;
 
-use zdi\Container;
-use zdi\Compiler\DefinitionCompiler;
-use zdi\Definition;
 use zdi\Definition\DataDefinition;
-use zdi\Exception;
 use zdi\InjectionPoint;
-use zdi\Param;
-use zdi\Tests\Fixture\ContainerArgument;
-use zdi\Utils;
 
 class DataDefinitionCompiler extends AbstractDefinitionCompiler
 {
@@ -24,7 +18,7 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
     /**
      * @inheritdoc
      */
-    public function compile()
+    public function compile() : BuilderAbstract
     {
         $definition = $this->definition;
         $identifier = $definition->getIdentifier();
@@ -41,7 +35,6 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
         if( !$definition->isFactory() ) {
             // Add instance check
             $method->addStmt($this->makeSingletonCheck());
-            $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $identifier);
         }
 
         // Prepare return variable
@@ -65,9 +58,6 @@ class DataDefinitionCompiler extends AbstractDefinitionCompiler
 
         // Compile setters
         $setters = $this->compileSetters($definition->getSetters(), $retVar);
-
-        // Compile interface injection
-        //$setters = array_merge($setters, $this->compileInterfaces($retVar));
 
         // Add return statement
         if( $setters ) {

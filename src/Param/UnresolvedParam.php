@@ -15,7 +15,7 @@ class UnresolvedParam implements Param
      * @param string $name
      * @param string|null $type
      */
-    public function __construct($name)
+    public function __construct(string $name)
     {
         $this->name = $name;
     }
@@ -23,7 +23,7 @@ class UnresolvedParam implements Param
     /**
      * @return string
      */
-    public function getName()
+    public function getName() : string
     {
         return $this->name;
     }

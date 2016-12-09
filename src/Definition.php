@@ -11,13 +11,13 @@ interface Definition
 
     public function getName();
 
-    public function getKey();
+    public function getKey() : string;
 
-    public function getIdentifier();
+    public function getIdentifier() : string;
 
-    public function getTypeHint();
+    public function getTypeHint() : string;
 
-    public function isFactory();
+    public function isFactory() : bool;
 
-    public function isGlobal();
+    public function isGlobal() : bool;
 }

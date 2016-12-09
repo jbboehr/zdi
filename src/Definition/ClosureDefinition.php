@@ -26,6 +26,7 @@ class ClosureDefinition extends AbstractDefinition
     /**
      * @param Closure $closure
      * @param array $params
+     * @param array $setters
      * @param string $class
      * @param string $name
      * @param integer $flags
@@ -46,7 +47,7 @@ class ClosureDefinition extends AbstractDefinition
     /**
      * @return Closure
      */
-    public function getClosure()
+    public function getClosure() : Closure
     {
         return $this->closure;
     }
@@ -54,7 +55,7 @@ class ClosureDefinition extends AbstractDefinition
     /**
      * @return Param[]
      */
-    public function getParams()
+    public function getParams() : array
     {
         return $this->params;
     }
@@ -62,7 +63,7 @@ class ClosureDefinition extends AbstractDefinition
     /**
      * @return array
      */
-    public function getSetters()
+    public function getSetters() : array
     {
         return $this->setters;
     }
@@ -70,7 +71,7 @@ class ClosureDefinition extends AbstractDefinition
     /**
      * @return boolean
      */
-    public function hasInjectionPointParam()
+    public function hasInjectionPointParam() : bool
     {
         foreach( $this->params as $param ) {
             if( $param instanceof Param\InjectionPointParam ) {

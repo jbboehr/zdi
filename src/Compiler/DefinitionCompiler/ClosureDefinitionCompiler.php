@@ -2,6 +2,8 @@
 
 namespace zdi\Compiler\DefinitionCompiler;
 
+use PhpParser\BuilderAbstract;
+use PhpParser\Parser;
 use ReflectionFunction;
 
 use PhpParser\NodeTraverser;
@@ -15,13 +17,10 @@ use SuperClosure\Exception\ClosureAnalysisException;
 
 use zdi\Container;
 use zdi\Compiler\Visitor;
-use zdi\Compiler\DefinitionCompiler;
-use zdi\Definition;
 use zdi\Definition\ClosureDefinition;
 use zdi\Exception;
 use zdi\InjectionPoint;
 use zdi\Param;
-use zdi\Utils;
 
 class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
 {
@@ -33,7 +32,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
     /**
      * @inheritdoc
      */
-    public function compile()
+    public function compile() : BuilderAbstract
     {
         $definition = $this->definition;
         $identifier = $definition->getIdentifier();
@@ -80,7 +79,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
      * @return Node[]
      * @throws Exception\DomainException
      */
-    private function translateParameters(ReflectionFunction $reflectionFunction, $stmts)
+    private function translateParameters(ReflectionFunction $reflectionFunction, $stmts) : array
     {
         $map = array();
         $prepend = array();
@@ -115,7 +114,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
      * @param Node[] $stmts
      * @return Node[]
      */
-    private function translateReturnStatements(array $stmts)
+    private function translateReturnStatements(array $stmts) : array
     {
         // Ignore factories
         if( $this->definition->isFactory() ) {
@@ -136,7 +135,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
      * @param ReflectionFunction $reflectionFunction
      * @return Node\Expr\Closure
      */
-    private function locateClosure(ReflectionFunction $reflectionFunction)
+    private function locateClosure(ReflectionFunction $reflectionFunction) : Node\Expr\Closure
     {
         try {
             $locator = new ClosureLocatorVisitor($reflectionFunction);
@@ -164,7 +163,7 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
      * @param ReflectionFunction $reflection
      * @return null|\PhpParser\Node[]
      */
-    private function getFileAst(ReflectionFunction $reflection)
+    private function getFileAst(ReflectionFunction $reflection) : array
     {
         $fileName = $reflection->getFileName();
         if( isset($this->astCache[$fileName]) ) {
@@ -181,9 +180,9 @@ class ClosureDefinitionCompiler extends AbstractDefinitionCompiler
     }
 
     /**
-     * @return \PhpParser\Parser
+     * @return Parser
      */
-    private function getParser()
+    private function getParser() : Parser
     {
         return (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }

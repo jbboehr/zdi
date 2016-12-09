@@ -172,7 +172,7 @@ class DefinitionBuilder
      * @return Definition
      * @throws Exception\DomainException
      */
-    public function build()
+    public function build() : Definition
     {
         if( is_string($this->provider) ) {
             $definition = new ClassDefinition($this->provider, $this->class, $this->name, $this->flags);
@@ -221,7 +221,7 @@ class DefinitionBuilder
      * @return Param[]
      * @throws Exception\DomainException
      */
-    private function convertConstructor(ReflectionClass $reflectionClass)
+    private function convertConstructor(ReflectionClass $reflectionClass) : array
     {
         $reflectionMethod = $reflectionClass->getConstructor();
         if( $reflectionMethod ) {
@@ -236,7 +236,7 @@ class DefinitionBuilder
      * @return Param[]
      * @throws Exception\DomainException
      */
-    private function convertParameters($parameters)
+    private function convertParameters($parameters) : array
     {
         $result = array();
         foreach( $parameters as $parameter ) {
@@ -270,7 +270,7 @@ class DefinitionBuilder
      * @return Param
      * @throws Exception\DomainException
      */
-    private function convertParam($param)
+    private function convertParam($param) : Param
     {
         if( is_string($param) ) {
             return new Param\NamedParam($param);
@@ -286,7 +286,7 @@ class DefinitionBuilder
      * @return Param[]
      * @throws Exception\DomainException
      */
-    private function convertSetters(ReflectionClass $reflectionClass)
+    private function convertSetters(ReflectionClass $reflectionClass) : array
     {
         $setters = array();
         foreach( $this->setters as $name => $param ) {
@@ -302,7 +302,7 @@ class DefinitionBuilder
      * @return Param
      * @throws Exception\DomainException
      */
-    private function convertSetter(ReflectionMethod $reflectionMethod, $param)
+    private function convertSetter(ReflectionMethod $reflectionMethod, $param) : Param
     {
         $parameters = $reflectionMethod->getParameters();
         $parameter = $parameters[0];
@@ -338,6 +338,9 @@ class DefinitionBuilder
         $this->class = $returnTypeStr;
     }
 
+    /**
+     * @param ReflectionClass $reflectionClass
+     */
     private function scanSetters(ReflectionClass $reflectionClass)
     {
         foreach( $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC) as $reflectionMethod ) {

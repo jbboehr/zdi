@@ -51,7 +51,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
     /**
      * @return Node\Stmt\If_
      */
-    protected function makeSingletonCheck()
+    protected function makeSingletonCheck() : Node\Stmt\If_
     {
         $prop = new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $this->definition->getIdentifier());
         return new Node\Stmt\If_(
@@ -69,7 +69,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      * @return Node\Expr
      * @throws Exception\DomainException
      */
-    protected function compileParam(Param $param, InjectionPoint $ip)
+    protected function compileParam(Param $param, InjectionPoint $ip) : Node\Expr
     {
         if( $param instanceof Param\ClassParam ) {
             $key = $param->getClass();
@@ -94,7 +94,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
                 ));
             }
         } else if( $param instanceof Param\ValueParam ) {
-            return new Node\Arg($this->compileValue($param->getValue()));
+            return $this->compileValue($param->getValue());
         } else if( $param instanceof Param\UnresolvedParam ) {
             $definition = Utils::resolveGlobalKey($this->definitions, $param->getName(), true);
             if (!$definition) {
@@ -114,7 +114,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      * @param InjectionPoint $ip
      * @return Node\Expr\MethodCall
      */
-    private function compileParamInjectionPoint(Definition $definition, InjectionPoint $ip)
+    private function compileParamInjectionPoint(Definition $definition, InjectionPoint $ip) : Node\Expr\MethodCall
     {
         $hasInjectionPoint = false;
         if( $definition instanceof Definition\ClosureDefinition ) {
@@ -137,7 +137,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      * @return Node\Expr
      * @throws Exception\DomainException
      */
-    protected function compileValue($value)
+    protected function compileValue($value) : Node\Expr
     {
         return Utils::parserNodeFromValue($value);
     }
@@ -147,7 +147,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
      * @param Node\Expr $var
      * @return Node\Stmt[]
      */
-    protected function compileSetters(array $setters, $var)
+    protected function compileSetters(array $setters, $var) : array
     {
         $stmtByMethod = array_merge(
             $this->compileSettersRaw($setters, $var),
@@ -162,7 +162,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
         return $stmts;
     }
 
-    private function compileInterfaces($var)
+    private function compileInterfaces($var) : array
     {
         $stmtByMethod = array();
         $class = $this->definition->getClass();
@@ -186,7 +186,7 @@ abstract class AbstractDefinitionCompiler implements DefinitionCompiler
         return $stmtByMethod;
     }
 
-    private function compileSettersRaw(array $setters, $var)
+    private function compileSettersRaw(array $setters, $var) : array
     {
         $stmtByMethod = array();
 

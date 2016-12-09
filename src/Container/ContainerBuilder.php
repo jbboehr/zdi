@@ -5,6 +5,7 @@ namespace zdi\Container;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use zdi\Container;
 use zdi\Compiler\Compiler;
@@ -175,7 +176,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param string $class
      * @return $this
      */
-    public function alias($interface, $class)
+    public function alias(string $interface, string $class)
     {
         $this->addDefinition(new Definition\AliasDefinition($interface, $class));
         return $this;
@@ -185,7 +186,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param string $class
      * @return $this
      */
-    public function blacklist($class)
+    public function blacklist(string $class)
     {
         $this->blacklist[$class] = true;
         return $this;
@@ -195,7 +196,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param string $className
      * @return $this
      */
-    public function className($className)
+    public function className(string $className)
     {
         $this->className = $className;
         return $this;
@@ -218,7 +219,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param string $file
      * @return $this
      */
-    public function file($file)
+    public function file(string $file)
     {
         $this->file = $file;
         return $this;
@@ -227,7 +228,7 @@ class ContainerBuilder implements LoggerAwareInterface
     /**
      * @return Definition[]
      */
-    public function getDefinitions()
+    public function getDefinitions() : array
     {
         return $this->definitions;
     }
@@ -247,7 +248,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param boolean $flag
      * @return $this
      */
-    public function precompiled($flag = true)
+    public function precompiled(bool $flag = true)
     {
         $this->precompiled = (boolean) $flag;
         return $this;
@@ -257,7 +258,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param boolean $flag
      * @return $this
      */
-    public function stat($flag = true)
+    public function stat(bool $flag = true)
     {
         $this->stat = (boolean) $flag;
         return $this;
@@ -267,7 +268,7 @@ class ContainerBuilder implements LoggerAwareInterface
      * @param integer $ttl
      * @return $this
      */
-    public function ttl($ttl = 0)
+    public function ttl(int $ttl = 0)
     {
         $this->ttl = $ttl;
         return $this;
@@ -276,7 +277,7 @@ class ContainerBuilder implements LoggerAwareInterface
     /**
      * @return Container
      */
-    public function build()
+    public function build() : Container
     {
         if( $this->needsRedefine() ) {
             $this->scanDirectories();
@@ -292,7 +293,7 @@ class ContainerBuilder implements LoggerAwareInterface
         }
     }
 
-    private function buildCompiled()
+    private function buildCompiled() : Container
     {
         if( !$this->file ) {
             throw new Exception\DomainException('Must specify file');
@@ -324,16 +325,16 @@ class ContainerBuilder implements LoggerAwareInterface
      */
     public function setEnableSetterScan(bool $flag = true)
     {
-        $this->setterScan = true;
+        $this->setterScan = $flag;
         return $this;
     }
 
-    private function buildDefault()
+    private function buildDefault() : Container
     {
         return new RuntimeContainer(array(), $this->definitions);
     }
 
-    public function needsRedefine()
+    public function needsRedefine() : bool
     {
         if( $this->precompiled ) {
             // Precompiled never needs redefine
@@ -356,7 +357,7 @@ class ContainerBuilder implements LoggerAwareInterface
         }
     }
 
-    public function needsRebuild()
+    public function needsRebuild() : bool
     {
         if( $this->precompiled ) {
             // Precompiled never needs rebuild
@@ -416,7 +417,6 @@ class ContainerBuilder implements LoggerAwareInterface
                 require_once $path;
             }
         }
-        return $this;
     }
 
     private function scanNamespaces()
@@ -448,11 +448,9 @@ class ContainerBuilder implements LoggerAwareInterface
                 }
             }
         }
-
-        return $this;
     }
 
-    private function isWritable()
+    private function isWritable() : bool
     {
         if( file_exists($this->file) ) {
             return is_writable($this->file);

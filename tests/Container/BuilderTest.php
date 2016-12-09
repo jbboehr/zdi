@@ -78,7 +78,7 @@ class BuilderTest extends \PHPUnit_Framework_TestCase
 
     public function testInvalidCompiledArgs1()
     {
-        $this->setExpectedException(Exception\DomainException::class);
+        $this->setExpectedException(\TypeError::class);
         $builder = new ContainerBuilder();
         $builder->file($this->mktmp());
         $builder->build();

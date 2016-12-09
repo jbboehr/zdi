@@ -4,6 +4,7 @@ namespace zdi\Compiler;
 
 use ArrayObject;
 
+use PhpParser\BuilderAbstract;
 use PhpParser\BuilderFactory;
 use PhpParser\Builder;
 use PhpParser\Node;
@@ -59,7 +60,7 @@ class Compiler
      * @return string
      * @throws Exception\DomainException
      */
-    public function compile()
+    public function compile() : string
     {
         $class = $this->compileClass();
         $node = $this->builderFactory->namespace($this->namespace)
@@ -75,7 +76,7 @@ class Compiler
      * @return Builder\Class_
      * @throws Exception\DomainException
      */
-    private function compileClass()
+    private function compileClass() : Builder\Class_
     {
         $definitions = $this->definitions;
 
@@ -132,10 +133,10 @@ class Compiler
 
     /**
      * @param Definition $definition
-     * @return \PhpParser\BuilderAbstract
+     * @return BuilderAbstract
      * @throws Exception\DomainException
      */
-    private function compileDefinition(Definition $definition)
+    private function compileDefinition(Definition $definition) : BuilderAbstract
     {
         return $this->makeDefinitionCompiler($definition)->compile();
     }
@@ -145,7 +146,7 @@ class Compiler
      * @return DefinitionCompiler
      * @throws Exception\DomainException
      */
-    private function makeDefinitionCompiler(Definition $definition)
+    private function makeDefinitionCompiler(Definition $definition) : DefinitionCompiler
     {
         if( $definition instanceof Definition\DataDefinition ) {
             return new DefinitionCompiler\DataDefinitionCompiler($this->builderFactory, $definition, $this->definitions, $this->astCache);

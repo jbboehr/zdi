@@ -39,7 +39,7 @@ class DataDefinition extends AbstractDefinition
     /**
      * @return Param[]
      */
-    public function getParams()
+    public function getParams() : array
     {
         return $this->params;
     }
@@ -47,7 +47,7 @@ class DataDefinition extends AbstractDefinition
     /**
      * @return Param[]
      */
-    public function getSetters()
+    public function getSetters() : array
     {
         return $this->setters;
     }
@@ -55,7 +55,7 @@ class DataDefinition extends AbstractDefinition
     /**
      * @return boolean
      */
-    public function hasInjectionPointParam()
+    public function hasInjectionPointParam() : bool
     {
         foreach( $this->params as $param ) {
             if( $param instanceof Param\InjectionPointParam ) {
