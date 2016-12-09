@@ -273,7 +273,7 @@ class DefinitionBuilder
     /**
      * @param ReflectionMethod $reflectionMethod
      * @param $param
-     * @return Param[]
+     * @return Param
      * @throws Exception\DomainException
      */
     private function convertSetter(ReflectionMethod $reflectionMethod, $param)
@@ -297,7 +297,7 @@ class DefinitionBuilder
      */
     private function convertReturnType(ReflectionFunction $reflectionFunction)
     {
-        if( $this->class || !method_exists(ReflectionFunction::class, 'getReturnType') ) {
+        if( $this->class ) {
             return;
         }
         $returnType = $reflectionFunction->getReturnType();
