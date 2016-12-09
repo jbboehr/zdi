@@ -2,6 +2,10 @@
 
 namespace zdi\Container;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
+
+use Psr\Log\NullLogger;
 use zdi\Container;
 use zdi\Compiler\Compiler;
 use zdi\Definition;
@@ -15,8 +19,10 @@ use zdi\Utils;
  * @package zdi\Container
  * @property-read boolean $precompiled
  */
-class ContainerBuilder
+class ContainerBuilder implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * @var array
      */
@@ -218,6 +224,17 @@ class ContainerBuilder
     }
 
     /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        if( null === $this->logger ) {
+            $this->logger = new NullLogger();
+        }
+        return $this->logger;
+    }
+
+    /**
      * @param boolean $flag
      * @return $this
      */
@@ -406,7 +423,9 @@ class ContainerBuilder
                     }
                     $builder->build();
                 } catch ( \zdi\Exception $e ) {
-                    // @todo fixme
+                    $this->logger->info($e, array(
+                        'className' => $class,
+                    ));
                 }
             }
         }
