@@ -1029,4 +1029,20 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('bar', $container->get('foo'));
     }
+
+    /**
+     * @param Builder $builder
+     * @dataProvider containerBuilderProvider
+     */
+    public function testSetterScanner(Builder $builder)
+    {
+        $builder->setEnableSetterScan(true);
+        $builder->define(Fixture\NoArguments::class)
+            ->build();
+        $builder->define(Fixture\OneSetter::class)
+            ->build();
+        $container = $builder->build();
+
+        $this->assertInstanceOf(Fixture\NoArguments::class, $container->get(Fixture\OneSetter::class)->getObject());
+    }
 }

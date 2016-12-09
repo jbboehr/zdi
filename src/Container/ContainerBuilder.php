@@ -71,6 +71,11 @@ class ContainerBuilder implements LoggerAwareInterface
     /**
      * @var boolean
      */
+    private $setterScan;
+
+    /**
+     * @var boolean
+     */
     private $stat;
 
     /**
@@ -202,7 +207,11 @@ class ContainerBuilder implements LoggerAwareInterface
      */
     public function define($class = null)
     {
-        return new DefinitionBuilder($this, $class);
+        $definitionBuilder = new DefinitionBuilder($this, $class);
+        if( $this->setterScan ) {
+            $definitionBuilder->setEnableSetterScan(true);
+        }
+        return $definitionBuilder;
     }
 
     /**
@@ -307,6 +316,16 @@ class ContainerBuilder implements LoggerAwareInterface
         }
 
         return new $this->className;
+    }
+
+    /**
+     * @param bool $flag
+     * @return $this
+     */
+    public function setEnableSetterScan(bool $flag = true)
+    {
+        $this->setterScan = true;
+        return $this;
     }
 
     private function buildDefault()

@@ -49,6 +49,11 @@ class DefinitionBuilder
     private $params = array();
 
     /**
+     * @var bool
+     */
+    private $scanSetters = false;
+
+    /**
      * @var array
      */
     private $setters = array();
@@ -121,6 +126,16 @@ class DefinitionBuilder
     }
 
     /**
+     * @param bool $flag
+     * @return $this
+     */
+    public function setEnableSetterScan(bool $flag = true)
+    {
+        $this->scanSetters = $flag;
+        return $this;
+    }
+
+    /**
      * @param boolean $global
      * @return $this
      */
@@ -173,6 +188,9 @@ class DefinitionBuilder
                 throw new Exception\DomainException('Cannot build abstract class or interface');
             }
             $params = $this->convertConstructor($reflectionClass);
+            if( $this->scanSetters ) {
+                $this->scanSetters($reflectionClass);
+            }
             $setters = $this->convertSetters($reflectionClass);
             $definition = new DataDefinition($params, $setters, $this->class, $this->name, $this->flags);
         } else {
@@ -309,5 +327,31 @@ class DefinitionBuilder
             return;
         }
         $this->class = $returnTypeStr;
+    }
+
+    private function scanSetters(ReflectionClass $reflectionClass)
+    {
+        foreach( $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC) as $reflectionMethod ) {
+            // Ignore if doesn't begin with set
+            $methodName = $reflectionMethod->getName();
+            if( 0 !== strncmp('set', $methodName, 3) ) {
+                continue;
+            }
+            // Ignore if it's already been set manually by the user
+            if( isset($this->setters[$methodName]) ) {
+                continue;
+            }
+            // Ignore if number of parameters is not 1
+            if( 1 !== $reflectionMethod->getNumberOfParameters() ) {
+                continue;
+            }
+            $reflectionParameter = $reflectionMethod->getParameters()[0];
+            $reflectionParameterClass = $reflectionParameter->getClass();
+            // Ignore if setter doesn't have a typehint
+            if( !$reflectionParameterClass ) {
+                continue;
+            }
+            $this->setters[$methodName] = $reflectionParameterClass->getName();
+        }
     }
 }
